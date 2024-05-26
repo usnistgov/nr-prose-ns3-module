@@ -10,15 +10,6 @@ set(nr-prose-examples_flowmon_examples
     nr-prose-network-coex
     nr-prose-l3-relay
 )
-set(nr-prose-examples_source_files
-    nr-v2x-examples/ue-mac-pscch-tx-output-stats.cc
-    nr-v2x-examples/ue-mac-pssch-tx-output-stats.cc
-    nr-v2x-examples/ue-phy-pscch-rx-output-stats.cc
-    nr-v2x-examples/ue-phy-pssch-rx-output-stats.cc
-    nr-v2x-examples/ue-rlc-rx-output-stats.cc
-    nr-v2x-examples/ue-to-ue-pkt-txrx-output-stats.cc
-    nr-v2x-examples/v2x-kpi.cc
-)
 foreach(
   example
   ${nr-prose-examples_examples}
@@ -26,8 +17,8 @@ foreach(
   build_lib_example(
     NAME ${example}
     SOURCE_FILES ${example}.cc
-                 ${nr-prose-examples_source_files}
     LIBRARIES_TO_LINK ${libnr}
+                      ${libnr-prose}
   )
 endforeach()
 foreach(
@@ -37,13 +28,13 @@ foreach(
   build_lib_example(
     NAME ${example}
     SOURCE_FILES ${example}.cc
-                 ${nr-prose-examples_source_files}
     LIBRARIES_TO_LINK ${libnr}
+                      ${libnr-prose}
                       ${libflow-monitor}
   )
 endforeach()
 
-set(PROSE_L3_RELAY_ON_OFF_LIBRARIES ${libnr} ${libflow-monitor})
+set(PROSE_L3_RELAY_ON_OFF_LIBRARIES ${libnr} ${libnr-prose} ${libflow-monitor})
 if(${NS3_NETSIMULYZER})
   set(PROSE_L3_RELAY_ON_OFF_LIBRARIES ${PROSE_L3_RELAY_ON_OFF_LIBRARIES} ${libnetsimulyzer})
 endif()
@@ -51,15 +42,15 @@ endif()
 build_lib_example(
   NAME nr-prose-l3-relay-on-off
   SOURCE_FILES nr-prose-l3-relay-on-off.cc
-               ${nr-prose-examples_source_files}
   LIBRARIES_TO_LINK ${PROSE_L3_RELAY_ON_OFF_LIBRARIES}
 )
 
-# To be enabled when psc and sip modules are added
+# Also requires psc and sip modules; uncomment the below if they are present
 #build_lib_example(
 #  NAME nr-prose-l3-relay-mcptt
 #  SOURCE_FILES nr-prose-l3-relay-mcptt.cc
-#               ${nr-prose-examples_source_files}
 #  LIBRARIES_TO_LINK ${PROSE_L3_RELAY_ON_OFF_LIBRARIES}
+#                    ${libnr-prose}
 #                    ${libpsc}
 #                    ${libsip}
+#)
