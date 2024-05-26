@@ -33,7 +33,6 @@
  * subject to copyright protection within the United States.
  */
 
-
 /**
  * \ingroup examples
  * \file nr-prose-l3-relay-on-off.cc
@@ -120,92 +119,100 @@ $ ./ns3 run "nr-prose-l3-relay-on-off --Help"
     \endcode
  */
 
-
-#include "ns3/core-module.h"
-#include "ns3/config-store.h"
-#include "ns3/network-module.h"
-#include "ns3/internet-module.h"
-#include "ns3/internet-apps-module.h"
-#include "ns3/applications-module.h"
-#include "ns3/log.h"
-#include "ns3/point-to-point-helper.h"
-#include "ns3/flow-monitor-module.h"
-#include "ns3/nr-helper.h"
-#include "ns3/nr-point-to-point-epc-helper.h"
-#include "ns3/ipv4-global-routing-helper.h"
-#include "ns3/config-store-module.h"
-#include "ns3/nr-mac-scheduler-tdma-rr.h"
-#include "ns3/nr-module.h"
-#include "ns3/point-to-point-module.h"
-#include "ns3/ideal-beamforming-algorithm.h"
 #include "ns3/antenna-module.h"
-#include <ns3/nr-sl-pc5-signalling-header.h>
-#include <ns3/nr-sl-ue-prose.h>
-#include <ns3/epc-ue-nas.h>
-#include "ns3/gnuplot.h"
+#include "ns3/applications-module.h"
+#include "ns3/config-store-module.h"
+#include "ns3/config-store.h"
+#include "ns3/core-module.h"
+#include "ns3/flow-monitor-module.h"
+#include "ns3/internet-apps-module.h"
+#include "ns3/internet-module.h"
+#include "ns3/lte-module.h"
+#include "ns3/network-module.h"
+#include "ns3/nr-module.h"
+#include "ns3/nr-prose-module.h"
+#include "ns3/point-to-point-module.h"
+#include "ns3/stats-module.h"
+
 #include <sqlite3.h>
 
 #ifdef HAS_NETSIMULYZER
 #include <ns3/netsimulyzer-module.h>
 #endif
 
-//Dependency of these nr-v2x-examples classes for SL statistics
-#include "../nr-v2x-examples/ue-mac-pscch-tx-output-stats.h"
-#include "../nr-v2x-examples/ue-mac-pssch-tx-output-stats.h"
-#include "../nr-v2x-examples/ue-phy-pscch-rx-output-stats.h"
-#include "../nr-v2x-examples/ue-phy-pssch-rx-output-stats.h"
-#include "../nr-v2x-examples/ue-to-ue-pkt-txrx-output-stats.h"
-#include "../nr-v2x-examples/ue-rlc-rx-output-stats.h"
-
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("NrProseL3RelayOnOff");
+NS_LOG_COMPONENT_DEFINE("NrProseL3RelayOnOff");
 
 /**************** Methods for tracing SL using databases *********************/
-/*Please reffer to nr-prose-unicast-multi-link.cc for function documentation */
-void NotifySlPscchScheduling (UeMacPscchTxOutputStats *pscchStats, const SlPscchUeMacStatParameters pscchStatsParams)
-{
-  pscchStats->Save (pscchStatsParams);
-}
-void NotifySlPsschScheduling (UeMacPsschTxOutputStats *psschStats, const SlPsschUeMacStatParameters psschStatsParams)
-{
-  psschStats->Save (psschStatsParams);
-}
-void NotifySlPscchRx (UePhyPscchRxOutputStats *pscchStats, const SlRxCtrlPacketTraceParams pscchStatsParams)
-{
-  pscchStats->Save (pscchStatsParams);
-}
-void NotifySlPsschRx (UePhyPsschRxOutputStats *psschStats, const SlRxDataPacketTraceParams psschStatsParams)
-{
-  psschStats->Save (psschStatsParams);
-}
-void NotifySlRlcPduRx (UeRlcRxOutputStats *stats, uint64_t imsi, uint16_t rnti, uint16_t txRnti, uint8_t lcid, uint32_t rxPduSize, double delay)
-{
-  stats->Save (imsi, rnti, txRnti, lcid, rxPduSize, delay);
-}
+/*Please refer to nr-prose-unicast-multi-link.cc for function documentation */
 void
-PacketTraceDb (UeToUePktTxRxOutputStats *stats, Ptr<Node> node, const Address &localAddrs,
-               std::string txRx, Ptr<const Packet> p, const Address &srcAddrs,
-               const Address &dstAddrs, const SeqTsSizeHeader &seqTsSizeHeader)
+NotifySlPscchScheduling(UeMacPscchTxOutputStats* pscchStats,
+                        const SlPscchUeMacStatParameters pscchStatsParams)
 {
-
-  uint32_t nodeId = node->GetId ();
-  uint64_t imsi;
-  if (node->GetDevice (0)->GetObject<NrUeNetDevice> () != nullptr)
-    {
-      imsi = node->GetDevice (0)->GetObject<NrUeNetDevice> ()->GetImsi ();
-    }
-  else
-    {
-      //It is the Remote Host node
-      imsi = 0;
-    }
-  uint32_t seq = seqTsSizeHeader.GetSeq ();
-  uint32_t pktSize = p->GetSize () + seqTsSizeHeader.GetSerializedSize ();
-
-  stats->Save (txRx, localAddrs, nodeId, imsi, pktSize, srcAddrs, dstAddrs, seq);
-
+    pscchStats->Save(pscchStatsParams);
 }
+
+void
+NotifySlPsschScheduling(UeMacPsschTxOutputStats* psschStats,
+                        const SlPsschUeMacStatParameters psschStatsParams)
+{
+    psschStats->Save(psschStatsParams);
+}
+
+void
+NotifySlPscchRx(UePhyPscchRxOutputStats* pscchStats,
+                const SlRxCtrlPacketTraceParams pscchStatsParams)
+{
+    pscchStats->Save(pscchStatsParams);
+}
+
+void
+NotifySlPsschRx(UePhyPsschRxOutputStats* psschStats,
+                const SlRxDataPacketTraceParams psschStatsParams)
+{
+    psschStats->Save(psschStatsParams);
+}
+
+void
+NotifySlRlcPduRx(UeRlcRxOutputStats* stats,
+                 uint64_t imsi,
+                 uint16_t rnti,
+                 uint16_t txRnti,
+                 uint8_t lcid,
+                 uint32_t rxPduSize,
+                 double delay)
+{
+    stats->Save(imsi, rnti, txRnti, lcid, rxPduSize, delay);
+}
+
+void
+PacketTraceDb(UeToUePktTxRxOutputStats* stats,
+              Ptr<Node> node,
+              const Address& localAddrs,
+              std::string txRx,
+              Ptr<const Packet> p,
+              const Address& srcAddrs,
+              const Address& dstAddrs,
+              const SeqTsSizeHeader& seqTsSizeHeader)
+{
+    uint32_t nodeId = node->GetId();
+    uint64_t imsi;
+    if (node->GetDevice(0)->GetObject<NrUeNetDevice>() != nullptr)
+    {
+        imsi = node->GetDevice(0)->GetObject<NrUeNetDevice>()->GetImsi();
+    }
+    else
+    {
+        // It is the Remote Host node
+        imsi = 0;
+    }
+    uint32_t seq = seqTsSizeHeader.GetSeq();
+    uint32_t pktSize = p->GetSize() + seqTsSizeHeader.GetSerializedSize();
+
+    stats->Save(txRx, localAddrs, nodeId, imsi, pktSize, srcAddrs, dstAddrs, seq);
+}
+
 /************** END Methods for tracing SL using databases *******************/
 
 /*
@@ -220,24 +227,28 @@ PacketTraceDb (UeToUePktTxRxOutputStats *stats, Ptr<Node> node, const Address &l
  * \param p the PC5-S packet
  */
 void
-TraceSinkPC5SignallingPacketTrace (Ptr<OutputStreamWrapper> stream,
-                                   Ptr<Node> node,
-                                   uint32_t srcL2Id, uint32_t dstL2Id, bool isTx, Ptr<Packet> p)
+TraceSinkPC5SignallingPacketTrace(Ptr<OutputStreamWrapper> stream,
+                                  Ptr<Node> node,
+                                  uint32_t srcL2Id,
+                                  uint32_t dstL2Id,
+                                  bool isTx,
+                                  Ptr<Packet> p)
 {
-  NrSlPc5SignallingMessageType pc5smt;
-  p->PeekHeader (pc5smt);
-  *stream->GetStream () << Simulator::Now ().GetSeconds ()
-                        << "\t" << node->GetId ();
-  if (isTx)
+    NrSlPc5SignallingMessageType pc5smt;
+    p->PeekHeader(pc5smt);
+    *stream->GetStream() << Simulator::Now().GetSeconds() << "\t" << node->GetId();
+    if (isTx)
     {
-      *stream->GetStream () << "\t" << "TX";
+        *stream->GetStream() << "\t"
+                             << "TX";
     }
-  else
+    else
     {
-      *stream->GetStream () << "\t" << "RX";
+        *stream->GetStream() << "\t"
+                             << "RX";
     }
-  *stream->GetStream () << "\t" << srcL2Id << "\t" << dstL2Id << "\t" << pc5smt.GetMessageName ();
-  *stream->GetStream () << std::endl;
+    *stream->GetStream() << "\t" << srcL2Id << "\t" << dstL2Id << "\t" << pc5smt.GetMessageName();
+    *stream->GetStream() << std::endl;
 }
 
 std::map<std::string, uint32_t> g_relayNasPacketCounter;
@@ -256,30 +267,29 @@ std::map<std::string, uint32_t> g_relayNasPacketCounter;
  * \param p the packet
  */
 void
-TraceSinkRelayNasRxPacketTrace (Ptr<OutputStreamWrapper> stream,
-                                Ptr<Node> node,
-                                Ipv4Address nodeIp, Ipv4Address srcIp, Ipv4Address dstIp,
-                                std::string srcLink, std::string dstLink, Ptr<Packet> p)
+TraceSinkRelayNasRxPacketTrace(Ptr<OutputStreamWrapper> stream,
+                               Ptr<Node> node,
+                               Ipv4Address nodeIp,
+                               Ipv4Address srcIp,
+                               Ipv4Address dstIp,
+                               std::string srcLink,
+                               std::string dstLink,
+                               Ptr<Packet> p)
 {
-  *stream->GetStream () << Simulator::Now ().GetSeconds ()
-                        << "\t" << node->GetId ()
-                        << "\t" << nodeIp
-                        << "\t" << srcIp
-                        << "\t" << dstIp
-                        << "\t" << srcLink
-                        << "\t" << dstLink
-                        << std::endl;
-  std::ostringstream  oss;
-  oss << nodeIp << "      " << srcIp << "->" << dstIp << "      " << srcLink << "->" << dstLink;
-  std::string mapKey = oss.str ();
-  auto it = g_relayNasPacketCounter.find (mapKey);
-  if (it == g_relayNasPacketCounter.end ())
+    *stream->GetStream() << Simulator::Now().GetSeconds() << "\t" << node->GetId() << "\t" << nodeIp
+                         << "\t" << srcIp << "\t" << dstIp << "\t" << srcLink << "\t" << dstLink
+                         << std::endl;
+    std::ostringstream oss;
+    oss << nodeIp << "      " << srcIp << "->" << dstIp << "      " << srcLink << "->" << dstLink;
+    std::string mapKey = oss.str();
+    auto it = g_relayNasPacketCounter.find(mapKey);
+    if (it == g_relayNasPacketCounter.end())
     {
-      g_relayNasPacketCounter.insert (std::pair < std::string, uint32_t> (mapKey, 1));
+        g_relayNasPacketCounter.insert(std::pair<std::string, uint32_t>(mapKey, 1));
     }
-  else
+    else
     {
-      it->second += 1;
+        it->second += 1;
     }
 }
 
@@ -289,8 +299,8 @@ TraceSinkRelayNasRxPacketTrace (Ptr<OutputStreamWrapper> stream,
  */
 struct PacketWithRxTimestamp
 {
-  Ptr<const Packet> p;
-  Time txTimestamp;
+    Ptr<const Packet> p;
+    Time txTimestamp;
 };
 
 /*
@@ -301,7 +311,7 @@ std::map<std::string, PacketWithRxTimestamp> g_rxPacketsForDelayCalc;
 
 /*
  * \brief Trace sink function for logging the transmitted data packets and their
- * 		  corresponding transmission timestamp at the application layer
+ *        corresponding transmission timestamp at the application layer
  *
  * \param localAddrs the IP address of the node transmitting the packet
  * \param p the packet
@@ -310,22 +320,21 @@ std::map<std::string, PacketWithRxTimestamp> g_rxPacketsForDelayCalc;
  * \param seqTsSizeHeader the header containing the sequence number of the packet
  */
 void
-TxPacketTraceForDelay (const Address &localAddrs, Ptr<const Packet> p, const Address &srcAddrs,
-                       const Address &dstAddrs, const SeqTsSizeHeader &seqTsSizeHeader)
+TxPacketTraceForDelay(const Address& localAddrs,
+                      Ptr<const Packet> p,
+                      const Address& srcAddrs,
+                      const Address& dstAddrs,
+                      const SeqTsSizeHeader& seqTsSizeHeader)
 {
-  std::ostringstream  oss;
-  oss << Ipv4Address::ConvertFrom (localAddrs)
-      << "->"
-      << InetSocketAddress::ConvertFrom (dstAddrs).GetIpv4 ()
-      << "("
-      << seqTsSizeHeader.GetSeq ()
-      << ")";
-  std::string mapKey = oss.str ();
-  PacketWithRxTimestamp mapValue;
-  mapValue.p = p;
-  mapValue.txTimestamp = Simulator::Now ();
-  g_rxPacketsForDelayCalc.insert (std::pair < std::string, PacketWithRxTimestamp> (mapKey, mapValue));
-
+    std::ostringstream oss;
+    oss << Ipv4Address::ConvertFrom(localAddrs) << "->"
+        << InetSocketAddress::ConvertFrom(dstAddrs).GetIpv4() << "(" << seqTsSizeHeader.GetSeq()
+        << ")";
+    std::string mapKey = oss.str();
+    PacketWithRxTimestamp mapValue;
+    mapValue.p = p;
+    mapValue.txTimestamp = Simulator::Now();
+    g_rxPacketsForDelayCalc.insert(std::pair<std::string, PacketWithRxTimestamp>(mapKey, mapValue));
 }
 
 /*
@@ -341,35 +350,33 @@ TxPacketTraceForDelay (const Address &localAddrs, Ptr<const Packet> p, const Add
  * \param seqTsSizeHeader the header containing the sequence number of the packet
  */
 void
-RxPacketTraceForDelay (Ptr<OutputStreamWrapper> stream, Ptr<Node> node, const Address &localAddrs,
-                       Ptr<const Packet> p, const Address &srcAddrs,
-                       const Address &dstAddrs, const SeqTsSizeHeader &seqTsSizeHeader)
+RxPacketTraceForDelay(Ptr<OutputStreamWrapper> stream,
+                      Ptr<Node> node,
+                      const Address& localAddrs,
+                      Ptr<const Packet> p,
+                      const Address& srcAddrs,
+                      const Address& dstAddrs,
+                      const SeqTsSizeHeader& seqTsSizeHeader)
 {
-  double delay = 0.0;
-  std::ostringstream  oss;
-  oss << InetSocketAddress::ConvertFrom (srcAddrs).GetIpv4 ()
-      << "->"
-      << Ipv4Address::ConvertFrom (localAddrs)
-      << "("
-      << seqTsSizeHeader.GetSeq ()
-      << ")";
-  std::string mapKey = oss.str ();
-  auto it = g_rxPacketsForDelayCalc.find (mapKey);
-  if (it == g_rxPacketsForDelayCalc.end ())
+    double delay = 0.0;
+    std::ostringstream oss;
+    oss << InetSocketAddress::ConvertFrom(srcAddrs).GetIpv4() << "->"
+        << Ipv4Address::ConvertFrom(localAddrs) << "(" << seqTsSizeHeader.GetSeq() << ")";
+    std::string mapKey = oss.str();
+    auto it = g_rxPacketsForDelayCalc.find(mapKey);
+    if (it == g_rxPacketsForDelayCalc.end())
     {
-      NS_FATAL_ERROR ("Rx packet not found?!");
+        NS_FATAL_ERROR("Rx packet not found?!");
     }
-  else
+    else
     {
-      delay = Simulator::Now ().GetSeconds () * 1000.0 - it->second.txTimestamp.GetSeconds () * 1000.0;
+        delay =
+            Simulator::Now().GetSeconds() * 1000.0 - it->second.txTimestamp.GetSeconds() * 1000.0;
     }
-  *stream->GetStream () << Simulator::Now ().GetSeconds ()
-                        << "\t" << node->GetId ()
-                        << "\t" << InetSocketAddress::ConvertFrom (srcAddrs).GetIpv4 ()
-                        << "\t" << Ipv4Address::ConvertFrom (localAddrs)
-                        << "\t" << seqTsSizeHeader.GetSeq ()
-                        << "\t" << delay
-                        << std::endl;
+    *stream->GetStream() << Simulator::Now().GetSeconds() << "\t" << node->GetId() << "\t"
+                         << InetSocketAddress::ConvertFrom(srcAddrs).GetIpv4() << "\t"
+                         << Ipv4Address::ConvertFrom(localAddrs) << "\t" << seqTsSizeHeader.GetSeq()
+                         << "\t" << delay << std::endl;
 }
 
 #ifdef HAS_NETSIMULYZER
@@ -385,11 +392,16 @@ RxPacketTraceForDelay (Ptr<OutputStreamWrapper> stream, Ptr<Node> node, const Ad
  * \param seqTsSizeHeader the header containing the sequence number of the packet
  */
 void
-PacketTraceNetSimulyzer (Ptr<netsimulyzer::ThroughputSink> sink, std::string txRx, Ptr<const Packet> p, const Address &srcAddrs,
-                         const Address &dstAddrs, const SeqTsSizeHeader &seqTsSizeHeader)
+PacketTraceNetSimulyzer(Ptr<netsimulyzer::ThroughputSink> sink,
+                        std::string txRx,
+                        Ptr<const Packet> p,
+                        const Address& srcAddrs,
+                        const Address& dstAddrs,
+                        const SeqTsSizeHeader& seqTsSizeHeader)
 {
-  sink->AddPacket (p);
+    sink->AddPacket(p);
 }
+
 /*
  * \brief  Trace sink to calculate the packet delay upon reception at the
  * application layer and add it to a netSimulyzer XYSeries.
@@ -403,34 +415,32 @@ PacketTraceNetSimulyzer (Ptr<netsimulyzer::ThroughputSink> sink, std::string txR
  * \param seqTsSizeHeader the header containing the sequence number of the packet
  */
 void
-RxPacketTraceForDelayNetSimulyzer (Ptr<netsimulyzer::XYSeries> series,
-                                   Ptr<Node> node,
-                                   const Address &localAddrs,
-                                   Ptr<const Packet> p,
-                                   const Address &srcAddrs,
-                                   const Address &dstAddrs,
-                                   const SeqTsSizeHeader &seqTsSizeHeader)
+RxPacketTraceForDelayNetSimulyzer(Ptr<netsimulyzer::XYSeries> series,
+                                  Ptr<Node> node,
+                                  const Address& localAddrs,
+                                  Ptr<const Packet> p,
+                                  const Address& srcAddrs,
+                                  const Address& dstAddrs,
+                                  const SeqTsSizeHeader& seqTsSizeHeader)
 {
-  double delay = 0.0;
-  std::ostringstream  oss;
-  oss << InetSocketAddress::ConvertFrom (srcAddrs).GetIpv4 ()
-      << "->"
-      << Ipv4Address::ConvertFrom (localAddrs)
-      << "("
-      << seqTsSizeHeader.GetSeq ()
-      << ")";
-  std::string mapKey = oss.str ();
-  auto it = g_rxPacketsForDelayCalc.find (mapKey);
-  if (it == g_rxPacketsForDelayCalc.end ())
+    double delay = 0.0;
+    std::ostringstream oss;
+    oss << InetSocketAddress::ConvertFrom(srcAddrs).GetIpv4() << "->"
+        << Ipv4Address::ConvertFrom(localAddrs) << "(" << seqTsSizeHeader.GetSeq() << ")";
+    std::string mapKey = oss.str();
+    auto it = g_rxPacketsForDelayCalc.find(mapKey);
+    if (it == g_rxPacketsForDelayCalc.end())
     {
-      NS_FATAL_ERROR ("Rx packet not found?!");
+        NS_FATAL_ERROR("Rx packet not found?!");
     }
-  else
+    else
     {
-      delay = Simulator::Now ().GetSeconds () * 1000.0 - it->second.txTimestamp.GetSeconds () * 1000.0;
+        delay =
+            Simulator::Now().GetSeconds() * 1000.0 - it->second.txTimestamp.GetSeconds() * 1000.0;
     }
-  series->Append (Simulator::Now ().GetSeconds (), delay);
+    series->Append(Simulator::Now().GetSeconds(), delay);
 }
+
 /*
  * \brief Trace sink to calculate the packet delay upon reception at the
  * application layer and add it to a netSimulyzer EcdfSink.
@@ -444,73 +454,68 @@ RxPacketTraceForDelayNetSimulyzer (Ptr<netsimulyzer::XYSeries> series,
  * \param seqTsSizeHeader the header containing the sequence number of the packet
  */
 void
-CdfTraceForDelayNetSimulyzer (Ptr<netsimulyzer::EcdfSink> ecdf,
-                              Ptr<Node> node,
-                              const Address &localAddrs,
-                              Ptr<const Packet> p,
-                              const Address &srcAddrs,
-                              const Address &dstAddrs,
-                              const SeqTsSizeHeader &seqTsSizeHeader)
+CdfTraceForDelayNetSimulyzer(Ptr<netsimulyzer::EcdfSink> ecdf,
+                             Ptr<Node> node,
+                             const Address& localAddrs,
+                             Ptr<const Packet> p,
+                             const Address& srcAddrs,
+                             const Address& dstAddrs,
+                             const SeqTsSizeHeader& seqTsSizeHeader)
 {
-  double delay = 0.0;
-  std::ostringstream  oss;
-  oss << InetSocketAddress::ConvertFrom (srcAddrs).GetIpv4 ()
-      << "->"
-      << Ipv4Address::ConvertFrom (localAddrs)
-      << "("
-      << seqTsSizeHeader.GetSeq ()
-      << ")";
-  std::string mapKey = oss.str ();
-  auto it = g_rxPacketsForDelayCalc.find (mapKey);
-  if (it == g_rxPacketsForDelayCalc.end ())
+    double delay = 0.0;
+    std::ostringstream oss;
+    oss << InetSocketAddress::ConvertFrom(srcAddrs).GetIpv4() << "->"
+        << Ipv4Address::ConvertFrom(localAddrs) << "(" << seqTsSizeHeader.GetSeq() << ")";
+    std::string mapKey = oss.str();
+    auto it = g_rxPacketsForDelayCalc.find(mapKey);
+    if (it == g_rxPacketsForDelayCalc.end())
     {
-      NS_FATAL_ERROR ("Rx packet not found?!");
+        NS_FATAL_ERROR("Rx packet not found?!");
     }
-  else
+    else
     {
-      delay = Simulator::Now ().GetSeconds () * 1000.0 - it->second.txTimestamp.GetSeconds () * 1000.0;
+        delay =
+            Simulator::Now().GetSeconds() * 1000.0 - it->second.txTimestamp.GetSeconds() * 1000.0;
     }
-  ecdf->Append (delay);
+    ecdf->Append(delay);
 }
 
 /*
  * Structure containing the colors used for the netSimulyzer curves
  */
-static const std::vector<netsimulyzer::Color3Value> g_colors
-{
-  netsimulyzer::DARK_RED_VALUE,
-  netsimulyzer::DARK_GREEN_VALUE,
-  netsimulyzer::DARK_BLUE_VALUE,
-  netsimulyzer::DARK_ORANGE_VALUE,
-  netsimulyzer::DARK_PURPLE_VALUE,
-  netsimulyzer::DARK_YELLOW_VALUE,
-  netsimulyzer::DARK_PINK_VALUE,
-  netsimulyzer::BLACK,
-  netsimulyzer::RED_VALUE,
-  netsimulyzer::GREEN_VALUE,
-  netsimulyzer::BLUE_VALUE,
-  netsimulyzer::ORANGE_VALUE,
-  netsimulyzer::PURPLE_VALUE,
-  netsimulyzer::YELLOW_VALUE,
-  netsimulyzer::PINK_VALUE
-};
+static const std::vector<netsimulyzer::Color3Value> g_colors{netsimulyzer::DARK_RED_VALUE,
+                                                             netsimulyzer::DARK_GREEN_VALUE,
+                                                             netsimulyzer::DARK_BLUE_VALUE,
+                                                             netsimulyzer::DARK_ORANGE_VALUE,
+                                                             netsimulyzer::DARK_PURPLE_VALUE,
+                                                             netsimulyzer::DARK_YELLOW_VALUE,
+                                                             netsimulyzer::DARK_PINK_VALUE,
+                                                             netsimulyzer::BLACK,
+                                                             netsimulyzer::RED_VALUE,
+                                                             netsimulyzer::GREEN_VALUE,
+                                                             netsimulyzer::BLUE_VALUE,
+                                                             netsimulyzer::ORANGE_VALUE,
+                                                             netsimulyzer::PURPLE_VALUE,
+                                                             netsimulyzer::YELLOW_VALUE,
+                                                             netsimulyzer::PINK_VALUE};
 
-uint32_t g_idxColor = 0;  ///< Index used for choosing the next netSimulyzer color
+uint32_t g_idxColor = 0; ///< Index used for choosing the next netSimulyzer color
 
 /*
  * Function to obtain the next color used for the netSimulyzer curves
  *
  * \return returnValue the color to use
  */
-netsimulyzer::Color3Value GetNextColor ()
+netsimulyzer::Color3Value
+GetNextColor()
 {
-  netsimulyzer::Color3Value returnValue = g_colors[g_idxColor];
-  g_idxColor++;
-  if (g_idxColor > g_colors.size () - 1)
+    netsimulyzer::Color3Value returnValue = g_colors[g_idxColor];
+    g_idxColor++;
+    if (g_idxColor > g_colors.size() - 1)
     {
-      g_idxColor = 0;
+        g_idxColor = 0;
     }
-  return returnValue;
+    return returnValue;
 }
 #endif
 
@@ -528,1453 +533,1660 @@ netsimulyzer::Color3Value GetNextColor ()
  * \param remoteRadius the radios of the circumferences where the remote UEs are located
  */
 void
-GenerateTopologyPlotFile (std::string fileNameWithNoExtension, NodeContainer gNbNode,
-                          NodeContainer inNetUeNodes, NodeContainer relayUeNodes, NodeContainer remoteUeNodes,
-                          double relayRadius, double remoteRadius )
+GenerateTopologyPlotFile(std::string fileNameWithNoExtension,
+                         NodeContainer gNbNode,
+                         NodeContainer inNetUeNodes,
+                         NodeContainer relayUeNodes,
+                         NodeContainer remoteUeNodes,
+                         double relayRadius,
+                         double remoteRadius)
 {
-  std::string graphicsFileName = fileNameWithNoExtension + ".png";
-  std::string gnuplotFileName = fileNameWithNoExtension + ".plt";
-  std::string plotTitle = "Topology (Labels = Node IDs)";
+    std::string graphicsFileName = fileNameWithNoExtension + ".png";
+    std::string gnuplotFileName = fileNameWithNoExtension + ".plt";
+    std::string plotTitle = "Topology (Labels = Node IDs)";
 
-  Gnuplot plot (graphicsFileName);
-  plot.SetTitle (plotTitle);
-  plot.SetTerminal ("png size 1024,1024");
-  plot.SetLegend ("X", "Y"); //These are the axis, not the legend
-  std::ostringstream plotExtras;
-  plotExtras << "set xrange [-" << 1.1 * (relayRadius + remoteRadius) << ":+" << 1.1 * (relayRadius + remoteRadius) << "]" << std::endl;
-  plotExtras << "set yrange [-" << 1.1 * (relayRadius + remoteRadius) << ":+" << 1.1 * (relayRadius + remoteRadius) << "]" << std::endl;
-  plotExtras << "set linetype 1 pt 3 ps 2 " << std::endl;
-  plotExtras << "set linetype 2 lc rgb \"green\" pt 2 ps 2" << std::endl;
-  plotExtras << "set linetype 3 pt 1 ps 2" << std::endl;
-  plot.AppendExtra (plotExtras.str ());
+    Gnuplot plot(graphicsFileName);
+    plot.SetTitle(plotTitle);
+    plot.SetTerminal("png size 1024,1024");
+    plot.SetLegend("X", "Y"); // These are the axis, not the legend
+    std::ostringstream plotExtras;
+    plotExtras << "set xrange [-" << 1.1 * (relayRadius + remoteRadius) << ":+"
+               << 1.1 * (relayRadius + remoteRadius) << "]" << std::endl;
+    plotExtras << "set yrange [-" << 1.1 * (relayRadius + remoteRadius) << ":+"
+               << 1.1 * (relayRadius + remoteRadius) << "]" << std::endl;
+    plotExtras << "set linetype 1 pt 3 ps 2 " << std::endl;
+    plotExtras << "set linetype 2 lc rgb \"green\" pt 2 ps 2" << std::endl;
+    plotExtras << "set linetype 3 pt 1 ps 2" << std::endl;
+    plot.AppendExtra(plotExtras.str());
 
-  //gNB
-  Gnuplot2dDataset datasetEnodeB;
-  datasetEnodeB.SetTitle ("eNodeB");
-  datasetEnodeB.SetStyle (Gnuplot2dDataset::POINTS);
+    // gNB
+    Gnuplot2dDataset datasetEnodeB;
+    datasetEnodeB.SetTitle("eNodeB");
+    datasetEnodeB.SetStyle(Gnuplot2dDataset::POINTS);
 
-  double x = gNbNode.Get (0)->GetObject<MobilityModel> ()->GetPosition ().x;
-  double y = gNbNode.Get (0)->GetObject<MobilityModel> ()->GetPosition ().y;
-  std::ostringstream strForLabel;
-  strForLabel << "set label \"" << gNbNode.Get (0)->GetId () << "\" at " << x << "," << y << " textcolor rgb \"grey\" center front offset 0,1";
-  plot.AppendExtra (strForLabel.str ());
-  datasetEnodeB.Add (x, y);
-  plot.AddDataset (datasetEnodeB);
+    double x = gNbNode.Get(0)->GetObject<MobilityModel>()->GetPosition().x;
+    double y = gNbNode.Get(0)->GetObject<MobilityModel>()->GetPosition().y;
+    std::ostringstream strForLabel;
+    strForLabel << "set label \"" << gNbNode.Get(0)->GetId() << "\" at " << x << "," << y
+                << " textcolor rgb \"grey\" center front offset 0,1";
+    plot.AppendExtra(strForLabel.str());
+    datasetEnodeB.Add(x, y);
+    plot.AddDataset(datasetEnodeB);
 
-  //InNet UEs
-  Gnuplot2dDataset datasetInNets;
-  datasetInNets.SetTitle ("InNetwork UEs");
-  datasetInNets.SetStyle (Gnuplot2dDataset::POINTS);
-  for (uint32_t inNetIdx = 0; inNetIdx < inNetUeNodes.GetN (); inNetIdx++)
+    // InNet UEs
+    Gnuplot2dDataset datasetInNets;
+    datasetInNets.SetTitle("InNetwork UEs");
+    datasetInNets.SetStyle(Gnuplot2dDataset::POINTS);
+    for (uint32_t inNetIdx = 0; inNetIdx < inNetUeNodes.GetN(); inNetIdx++)
     {
-      double x = inNetUeNodes.Get (inNetIdx)->GetObject<MobilityModel> ()->GetPosition ().x;
-      double y = inNetUeNodes.Get (inNetIdx)->GetObject<MobilityModel> ()->GetPosition ().y;
-      std::ostringstream strForLabel;
-      strForLabel << "set label \"" << inNetUeNodes.Get (inNetIdx)->GetId () << "\" at " << x << "," << y << " textcolor rgb \"grey\" center front offset 0,1";
-      plot.AppendExtra (strForLabel.str ());
-      datasetInNets.Add (x, y);
+        double x = inNetUeNodes.Get(inNetIdx)->GetObject<MobilityModel>()->GetPosition().x;
+        double y = inNetUeNodes.Get(inNetIdx)->GetObject<MobilityModel>()->GetPosition().y;
+        std::ostringstream strForLabel;
+        strForLabel << "set label \"" << inNetUeNodes.Get(inNetIdx)->GetId() << "\" at " << x << ","
+                    << y << " textcolor rgb \"grey\" center front offset 0,1";
+        plot.AppendExtra(strForLabel.str());
+        datasetInNets.Add(x, y);
     }
-  plot.AddDataset (datasetInNets);
+    plot.AddDataset(datasetInNets);
 
-  //Relay UEs
-  Gnuplot2dDataset datasetRelays;
-  datasetRelays.SetTitle ("Relay UEs");
-  datasetRelays.SetStyle (Gnuplot2dDataset::POINTS);
-  for (uint32_t ryIdx = 0; ryIdx < relayUeNodes.GetN (); ryIdx++)
+    // Relay UEs
+    Gnuplot2dDataset datasetRelays;
+    datasetRelays.SetTitle("Relay UEs");
+    datasetRelays.SetStyle(Gnuplot2dDataset::POINTS);
+    for (uint32_t ryIdx = 0; ryIdx < relayUeNodes.GetN(); ryIdx++)
     {
-      double x = relayUeNodes.Get (ryIdx)->GetObject<MobilityModel> ()->GetPosition ().x;
-      double y = relayUeNodes.Get (ryIdx)->GetObject<MobilityModel> ()->GetPosition ().y;
-      std::ostringstream strForLabel;
-      strForLabel << "set label \"" << relayUeNodes.Get (ryIdx)->GetId () << "\" at " << x << "," << y << " textcolor rgb \"grey\" center front offset 0,1";
-      plot.AppendExtra (strForLabel.str ());
-      datasetRelays.Add (x, y);
+        double x = relayUeNodes.Get(ryIdx)->GetObject<MobilityModel>()->GetPosition().x;
+        double y = relayUeNodes.Get(ryIdx)->GetObject<MobilityModel>()->GetPosition().y;
+        std::ostringstream strForLabel;
+        strForLabel << "set label \"" << relayUeNodes.Get(ryIdx)->GetId() << "\" at " << x << ","
+                    << y << " textcolor rgb \"grey\" center front offset 0,1";
+        plot.AppendExtra(strForLabel.str());
+        datasetRelays.Add(x, y);
     }
-  plot.AddDataset (datasetRelays);
+    plot.AddDataset(datasetRelays);
 
-  //Remote UEs
-  Gnuplot2dDataset datasetRemotes;
-  datasetRemotes.SetTitle ("Remote UEs");
-  datasetRemotes.SetStyle (Gnuplot2dDataset::POINTS);
-  for (uint32_t rmIdx = 0; rmIdx < remoteUeNodes.GetN (); rmIdx++)
+    // Remote UEs
+    Gnuplot2dDataset datasetRemotes;
+    datasetRemotes.SetTitle("Remote UEs");
+    datasetRemotes.SetStyle(Gnuplot2dDataset::POINTS);
+    for (uint32_t rmIdx = 0; rmIdx < remoteUeNodes.GetN(); rmIdx++)
     {
-      double x = remoteUeNodes.Get (rmIdx)->GetObject<MobilityModel> ()->GetPosition ().x;
-      double y = remoteUeNodes.Get (rmIdx)->GetObject<MobilityModel> ()->GetPosition ().y;
-      std::ostringstream strForLabel;
-      strForLabel << "set label \"" << remoteUeNodes.Get (rmIdx)->GetId () << "\" at " << x << "," << y << " textcolor rgb \"grey\" center front offset 0,1";
-      plot.AppendExtra (strForLabel.str ());
-      datasetRemotes.Add (x, y);
+        double x = remoteUeNodes.Get(rmIdx)->GetObject<MobilityModel>()->GetPosition().x;
+        double y = remoteUeNodes.Get(rmIdx)->GetObject<MobilityModel>()->GetPosition().y;
+        std::ostringstream strForLabel;
+        strForLabel << "set label \"" << remoteUeNodes.Get(rmIdx)->GetId() << "\" at " << x << ","
+                    << y << " textcolor rgb \"grey\" center front offset 0,1";
+        plot.AppendExtra(strForLabel.str());
+        datasetRemotes.Add(x, y);
     }
-  plot.AddDataset (datasetRemotes);
+    plot.AddDataset(datasetRemotes);
 
-  std::ofstream plotFile (gnuplotFileName.c_str ());
-  plot.GenerateOutput (plotFile);
-  plotFile.close ();
+    std::ofstream plotFile(gnuplotFileName.c_str());
+    plot.GenerateOutput(plotFile);
+    plotFile.close();
 }
-
 
 int
-main (int argc, char *argv[])
+main(int argc, char* argv[])
 {
-  //Common configuration
-  double centralFrequencyBand = 5.89e9; // band n47 (From SL examples)
-  double bandwidthBand = 40e6; //40 MHz
-  double centralFrequencyCc0 = 5.89e9;
-  double bandwidthCc0 = bandwidthBand;
-  std::string pattern = "DL|DL|DL|F|UL|UL|UL|UL|UL|UL|";
-  double bandwidthCc0Bpw0 = bandwidthCc0 / 2;
-  double bandwidthCc0Bpw1 = bandwidthCc0 / 2;
-  double ueTxPower = 23; //dBm
+    // Common configuration
+    double centralFrequencyBand = 5.89e9; // band n47 (From SL examples)
+    double bandwidthBand = 40e6;          // 40 MHz
+    double centralFrequencyCc0 = 5.89e9;
+    double bandwidthCc0 = bandwidthBand;
+    std::string pattern = "DL|DL|DL|F|UL|UL|UL|UL|UL|UL|";
+    double bandwidthCc0Bpw0 = bandwidthCc0 / 2;
+    double bandwidthCc0Bpw1 = bandwidthCc0 / 2;
+    double ueTxPower = 23; // dBm
 
-  //In-network devices configuration
-  uint16_t numerologyCc0Bwp0 = 2; // BWP0 will be used for the in-network
-  double gNBtotalTxPower = 32; // dBm
-  bool cellScan = false;  // Beamforming method.
-  double beamSearchAngleStep = 10.0; // Beamforming parameter.
+    // In-network devices configuration
+    uint16_t numerologyCc0Bwp0 = 2;    // BWP0 will be used for the in-network
+    double gNBtotalTxPower = 32;       // dBm
+    bool cellScan = false;             // Beamforming method.
+    double beamSearchAngleStep = 10.0; // Beamforming parameter.
 
-  //Sidelink configuration
-  uint16_t numerologyCc0Bwp1 = 2; //(From SL examples)  BWP1 will be used for SL
-  Time startRelayConnTime = Seconds (2.0); //Time to start the U2N relay connection establishment
-  bool enableSensing = false;
+    // Sidelink configuration
+    uint16_t numerologyCc0Bwp1 = 2;         //(From SL examples)  BWP1 will be used for SL
+    Time startRelayConnTime = Seconds(2.0); // Time to start the U2N relay connection establishment
+    bool enableSensing = false;
 
-  //Topology
-  uint16_t nInNetUes = 1;
-  uint16_t nRelayUes = 1;
-  uint16_t nRemoteUesPerRelay = 2;
-  uint16_t radiusInNetUes = 10; //meters
-  uint16_t radiusRelayUes = 15; //meters
-  uint16_t radiusRemoteUes = 4; //meters
-  double gNbHeight = 10; //meters
-  double ueHeight = 1.5; //meters
+    // Topology
+    uint16_t nInNetUes = 1;
+    uint16_t nRelayUes = 1;
+    uint16_t nRemoteUesPerRelay = 2;
+    uint16_t radiusInNetUes = 10; // meters
+    uint16_t radiusRelayUes = 15; // meters
+    uint16_t radiusRemoteUes = 4; // meters
+    double gNbHeight = 10;        // meters
+    double ueHeight = 1.5;        // meters
 
-  //Traffic
-  Time timeStartTraffic = Seconds (5.0);
-  uint16_t onOffPacketSize = 60; //bytes
-  double onOffDataRate = 24.0; //kbps
-  bool relayUesTraffic = true;
+    // Traffic
+    Time timeStartTraffic = Seconds(5.0);
+    uint16_t onOffPacketSize = 60; // bytes
+    double onOffDataRate = 24.0;   // kbps
+    bool relayUesTraffic = true;
 
+    // Simulation configuration
+    std::string outputDir = "./";
+    std::string exampleName = "nr-prose-l3-relay-on-off";
 
-  //Simulation configuration
-  std::string outputDir = "./";
-  std::string exampleName = "nr-prose-l3-relay-on-off";
+    Time simTime = Seconds(40.0); // seconds
 
-  Time simTime = Seconds (40.0); // seconds
+    CommandLine cmd;
+    cmd.AddValue("simTime", "Total duration of the simulation (s)", simTime);
+    cmd.AddValue("nInNetUes", "Number of in-network only UEs", nInNetUes);
+    cmd.AddValue("nRelayUes", "Number of relay UEs", nRelayUes);
+    cmd.AddValue("nRemoteUesPerRelay", "Number of remote UEs per relay UE", nRemoteUesPerRelay);
+    cmd.AddValue(
+        "radiusInNetUes",
+        "Radius of the circle (centered in the gNB) where in-network only UEs are positioned",
+        radiusInNetUes);
+    cmd.AddValue("radiusRelayUes",
+                 "Radius of the circle (centered in the gNB) where relay UEs are positioned",
+                 radiusRelayUes);
+    cmd.AddValue("radiusRemoteUes",
+                 "Radius of the circle (centered in the relay UE) where remote UEs are positioned",
+                 radiusRemoteUes);
+    cmd.AddValue("relayUesTraffic",
+                 "True if relay UEs have their own data traffic",
+                 relayUesTraffic);
+    cmd.AddValue("enableSensing", "True if sensing is activated", enableSensing);
 
-  CommandLine cmd;
-  cmd.AddValue ("simTime", "Total duration of the simulation (s)", simTime);
-  cmd.AddValue ("nInNetUes", "Number of in-network only UEs", nInNetUes);
-  cmd.AddValue ("nRelayUes", "Number of relay UEs", nRelayUes);
-  cmd.AddValue ("nRemoteUesPerRelay", "Number of remote UEs per relay UE", nRemoteUesPerRelay);
-  cmd.AddValue ("radiusInNetUes", "Radius of the circle (centered in the gNB) where in-network only UEs are positioned", radiusInNetUes);
-  cmd.AddValue ("radiusRelayUes", "Radius of the circle (centered in the gNB) where relay UEs are positioned", radiusRelayUes);
-  cmd.AddValue ("radiusRemoteUes", "Radius of the circle (centered in the relay UE) where remote UEs are positioned", radiusRemoteUes);
-  cmd.AddValue ("relayUesTraffic", "True if relay UEs have their own data traffic", relayUesTraffic);
-  cmd.AddValue ("enableSensing", "True if sensing is activated", enableSensing);
+    cmd.Parse(argc, argv);
 
-  cmd.Parse (argc, argv);
+    // Setup large enough buffer size to avoid overflow
+    Config::SetDefault("ns3::LteRlcUm::MaxTxBufferSize", UintegerValue(999999999));
+    // Setup -t-Reordering to 0ms to avoid RLC reordering delay
+    Config::SetDefault("ns3::LteRlcUm::ReorderingTimer", TimeValue(MilliSeconds(0)));
 
-  //Setup large enough buffer size to avoid overflow
-  Config::SetDefault ("ns3::LteRlcUm::MaxTxBufferSize", UintegerValue (999999999));
-  //Setup -t-Reordering to 0ms to avoid RLC reordering delay
-  Config::SetDefault ("ns3::LteRlcUm::ReorderingTimer", TimeValue (MilliSeconds (0)));
+    // create gNBs and in-network UEs, configure positions
+    NodeContainer gNbNodes;
+    NodeContainer inNetUeNodes;
+    NodeContainer relayUeNodes;
+    NodeContainer remoteUeNodes;
 
-  // create gNBs and in-network UEs, configure positions
-  NodeContainer gNbNodes;
-  NodeContainer inNetUeNodes;
-  NodeContainer relayUeNodes;
-  NodeContainer remoteUeNodes;
+    MobilityHelper mobility;
 
-  MobilityHelper mobility;
+    gNbNodes.Create(1);
+    inNetUeNodes.Create(nInNetUes);
+    relayUeNodes.Create(nRelayUes);
+    uint16_t nRemoteUes = nRelayUes * nRemoteUesPerRelay;
+    remoteUeNodes.Create(nRemoteUes);
 
-  gNbNodes.Create (1);
-  inNetUeNodes.Create (nInNetUes);
-  relayUeNodes.Create (nRelayUes);
-  uint16_t nRemoteUes = nRelayUes * nRemoteUesPerRelay;
-  remoteUeNodes.Create (nRemoteUes);
+    Ptr<ListPositionAllocator> gNbPositionAlloc = CreateObject<ListPositionAllocator>();
+    gNbPositionAlloc->Add(Vector(0.0, 0.0, gNbHeight));
 
-  Ptr<ListPositionAllocator> gNbPositionAlloc = CreateObject<ListPositionAllocator> ();
-  gNbPositionAlloc->Add (Vector (0.0, 0.0, gNbHeight));
-
-  //UEs
-  Ptr<ListPositionAllocator> posAllocInNet = CreateObject<ListPositionAllocator> ();
-  for (uint32_t inNetIdx = 0; inNetIdx < inNetUeNodes.GetN (); ++inNetIdx)
+    // UEs
+    Ptr<ListPositionAllocator> posAllocInNet = CreateObject<ListPositionAllocator>();
+    for (uint32_t inNetIdx = 0; inNetIdx < inNetUeNodes.GetN(); ++inNetIdx)
     {
-      //Relay UE
-      double in_angle = 45.0 + inNetIdx * (360.0 / inNetUeNodes.GetN ()); //degrees
-      double in_pos_x = radiusInNetUes * std::cos (in_angle * M_PI / 180.0);
-      double in_pos_y = radiusInNetUes * std::sin (in_angle * M_PI / 180.0);
+        // Relay UE
+        double in_angle = 45.0 + inNetIdx * (360.0 / inNetUeNodes.GetN()); // degrees
+        double in_pos_x = radiusInNetUes * std::cos(in_angle * M_PI / 180.0);
+        double in_pos_y = radiusInNetUes * std::sin(in_angle * M_PI / 180.0);
 
-      posAllocInNet->Add (Vector (in_pos_x, in_pos_y, ueHeight));
+        posAllocInNet->Add(Vector(in_pos_x, in_pos_y, ueHeight));
     }
 
-  Ptr<ListPositionAllocator> posAllocRelays = CreateObject<ListPositionAllocator> ();
-  Ptr<ListPositionAllocator> posAllocRemotes = CreateObject<ListPositionAllocator> ();
-  for (uint32_t ryIdx = 0; ryIdx < relayUeNodes.GetN (); ++ryIdx)
+    Ptr<ListPositionAllocator> posAllocRelays = CreateObject<ListPositionAllocator>();
+    Ptr<ListPositionAllocator> posAllocRemotes = CreateObject<ListPositionAllocator>();
+    for (uint32_t ryIdx = 0; ryIdx < relayUeNodes.GetN(); ++ryIdx)
     {
-      //Relay UE
-      double ry_angle = ryIdx * (360.0 / relayUeNodes.GetN ()); //degrees
-      double ry_pos_x = radiusRelayUes * std::cos (ry_angle * M_PI / 180.0);
-      double ry_pos_y = radiusRelayUes * std::sin (ry_angle * M_PI / 180.0);
+        // Relay UE
+        double ry_angle = ryIdx * (360.0 / relayUeNodes.GetN()); // degrees
+        double ry_pos_x = radiusRelayUes * std::cos(ry_angle * M_PI / 180.0);
+        double ry_pos_y = radiusRelayUes * std::sin(ry_angle * M_PI / 180.0);
 
-      posAllocRelays->Add (Vector (ry_pos_x, ry_pos_y, ueHeight));
+        posAllocRelays->Add(Vector(ry_pos_x, ry_pos_y, ueHeight));
 
-      NS_LOG_INFO ("Relay UE " << ryIdx + 1 << " node id = [" << relayUeNodes.Get (ryIdx)->GetId () << "]"
-                   " x " << ry_pos_x << " y " << ry_pos_y);
-      //Remote UEs
-      for (uint32_t rmIdx = 0; rmIdx < nRemoteUesPerRelay; ++rmIdx)
+        NS_LOG_INFO("Relay UE " << ryIdx + 1 << " node id = [" << relayUeNodes.Get(ryIdx)->GetId()
+                                << "]"
+                                   " x "
+                                << ry_pos_x << " y " << ry_pos_y);
+        // Remote UEs
+        for (uint32_t rmIdx = 0; rmIdx < nRemoteUesPerRelay; ++rmIdx)
         {
-          double rm_angle = 90.0 + rmIdx * (360.0 / nRemoteUesPerRelay); //degrees
-          double rm_pos_x = ry_pos_x + radiusRemoteUes * std::cos (rm_angle * M_PI / 180.0);
-          double rm_pos_y = ry_pos_y + radiusRemoteUes * std::sin (rm_angle * M_PI / 180.0);
+            double rm_angle = 90.0 + rmIdx * (360.0 / nRemoteUesPerRelay); // degrees
+            double rm_pos_x = ry_pos_x + radiusRemoteUes * std::cos(rm_angle * M_PI / 180.0);
+            double rm_pos_y = ry_pos_y + radiusRemoteUes * std::sin(rm_angle * M_PI / 180.0);
 
-          posAllocRemotes->Add (Vector (rm_pos_x, rm_pos_y, ueHeight));
+            posAllocRemotes->Add(Vector(rm_pos_x, rm_pos_y, ueHeight));
 
-          uint32_t remoteIdx = ryIdx * nRemoteUesPerRelay + rmIdx;
-          NS_LOG_INFO ("Remote UE " << remoteIdx << " node id = [" << remoteUeNodes.Get (remoteIdx)->GetId () << "]"
-                       " x " << rm_pos_x << " y " << rm_pos_y);
+            uint32_t remoteIdx = ryIdx * nRemoteUesPerRelay + rmIdx;
+            NS_LOG_INFO("Remote UE " << remoteIdx << " node id = ["
+                                     << remoteUeNodes.Get(remoteIdx)->GetId()
+                                     << "]"
+                                        " x "
+                                     << rm_pos_x << " y " << rm_pos_y);
         }
     }
 
-  //Install mobility
-  mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
+    // Install mobility
+    mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
 
-  mobility.SetPositionAllocator (gNbPositionAlloc);
-  mobility.Install (gNbNodes);
+    mobility.SetPositionAllocator(gNbPositionAlloc);
+    mobility.Install(gNbNodes);
 
-  mobility.SetPositionAllocator (posAllocInNet);
-  mobility.Install (inNetUeNodes);
+    mobility.SetPositionAllocator(posAllocInNet);
+    mobility.Install(inNetUeNodes);
 
-  mobility.SetPositionAllocator (posAllocRelays);
-  mobility.Install (relayUeNodes);
+    mobility.SetPositionAllocator(posAllocRelays);
+    mobility.Install(relayUeNodes);
 
-  mobility.SetPositionAllocator (posAllocRemotes);
-  mobility.Install (remoteUeNodes);
+    mobility.SetPositionAllocator(posAllocRemotes);
+    mobility.Install(remoteUeNodes);
 
-  //Generate gnuplot file with the script to generate the topology plot
-  std::string topoFilenameWithNoExtension = exampleName + "-topology";
-  GenerateTopologyPlotFile (topoFilenameWithNoExtension, gNbNodes, inNetUeNodes, relayUeNodes, remoteUeNodes, radiusRelayUes, radiusRemoteUes);
+    // Generate gnuplot file with the script to generate the topology plot
+    std::string topoFilenameWithNoExtension = exampleName + "-topology";
+    GenerateTopologyPlotFile(topoFilenameWithNoExtension,
+                             gNbNodes,
+                             inNetUeNodes,
+                             relayUeNodes,
+                             remoteUeNodes,
+                             radiusRelayUes,
+                             radiusRemoteUes);
 
-  //Setup Helpers
-  Ptr<NrHelper> nrHelper = CreateObject<NrHelper> ();
-  Ptr<NrPointToPointEpcHelper> epcHelper = CreateObject<NrPointToPointEpcHelper> ();
-  Ptr<IdealBeamformingHelper> idealBeamformingHelper = CreateObject<IdealBeamformingHelper>();
-  nrHelper->SetBeamformingHelper (idealBeamformingHelper);
-  nrHelper->SetEpcHelper (epcHelper);
+    // Setup Helpers
+    Ptr<NrHelper> nrHelper = CreateObject<NrHelper>();
+    Ptr<NrPointToPointEpcHelper> epcHelper = CreateObject<NrPointToPointEpcHelper>();
+    Ptr<IdealBeamformingHelper> idealBeamformingHelper = CreateObject<IdealBeamformingHelper>();
+    nrHelper->SetBeamformingHelper(idealBeamformingHelper);
+    nrHelper->SetEpcHelper(epcHelper);
 
-  /*************************Spectrum division ****************************/
-  BandwidthPartInfoPtrVector allBwps;
-  CcBwpCreator ccBwpCreator;
+    /*************************Spectrum division ****************************/
+    BandwidthPartInfoPtrVector allBwps;
 
-  OperationBandInfo band;
+    OperationBandInfo band;
 
-  /*
-   * The configured spectrum division is:
-   * |-------------- Band ------------|
-   * |---------------CC0--------------|
-   * |------BWP0------|------BWP1-----|
-   */
+    /*
+     * The configured spectrum division is:
+     * |-------------- Band ------------|
+     * |---------------CC0--------------|
+     * |------BWP0------|------BWP1-----|
+     */
 
-  std::unique_ptr<ComponentCarrierInfo> cc0 (new ComponentCarrierInfo ());
-  std::unique_ptr<BandwidthPartInfo> bwp0 (new BandwidthPartInfo ());
-  std::unique_ptr<BandwidthPartInfo> bwp1 (new BandwidthPartInfo ());
+    std::unique_ptr<ComponentCarrierInfo> cc0(new ComponentCarrierInfo());
+    std::unique_ptr<BandwidthPartInfo> bwp0(new BandwidthPartInfo());
+    std::unique_ptr<BandwidthPartInfo> bwp1(new BandwidthPartInfo());
 
-  band.m_centralFrequency  = centralFrequencyBand;
-  band.m_channelBandwidth = bandwidthBand;
-  band.m_lowerFrequency = band.m_centralFrequency - band.m_channelBandwidth / 2;
-  band.m_higherFrequency = band.m_centralFrequency + band.m_channelBandwidth / 2;
+    band.m_centralFrequency = centralFrequencyBand;
+    band.m_channelBandwidth = bandwidthBand;
+    band.m_lowerFrequency = band.m_centralFrequency - band.m_channelBandwidth / 2;
+    band.m_higherFrequency = band.m_centralFrequency + band.m_channelBandwidth / 2;
 
-  // Component Carrier 0
-  cc0->m_ccId = 0;
-  cc0->m_centralFrequency = centralFrequencyCc0;
-  cc0->m_channelBandwidth = bandwidthCc0;
-  cc0->m_lowerFrequency = cc0->m_centralFrequency - cc0->m_channelBandwidth / 2;
-  cc0->m_higherFrequency = cc0->m_centralFrequency + cc0->m_channelBandwidth / 2;
+    // Component Carrier 0
+    cc0->m_ccId = 0;
+    cc0->m_centralFrequency = centralFrequencyCc0;
+    cc0->m_channelBandwidth = bandwidthCc0;
+    cc0->m_lowerFrequency = cc0->m_centralFrequency - cc0->m_channelBandwidth / 2;
+    cc0->m_higherFrequency = cc0->m_centralFrequency + cc0->m_channelBandwidth / 2;
 
-  // BWP 0
-  bwp0->m_bwpId = 0;
-  bwp0->m_centralFrequency = cc0->m_lowerFrequency + cc0->m_channelBandwidth / 4;
-  bwp0->m_channelBandwidth = bandwidthCc0Bpw0;
-  bwp0->m_lowerFrequency = bwp0->m_centralFrequency - bwp0->m_channelBandwidth / 2;
-  bwp0->m_higherFrequency = bwp0->m_centralFrequency + bwp0->m_channelBandwidth / 2;
+    // BWP 0
+    bwp0->m_bwpId = 0;
+    bwp0->m_centralFrequency = cc0->m_lowerFrequency + cc0->m_channelBandwidth / 4;
+    bwp0->m_channelBandwidth = bandwidthCc0Bpw0;
+    bwp0->m_lowerFrequency = bwp0->m_centralFrequency - bwp0->m_channelBandwidth / 2;
+    bwp0->m_higherFrequency = bwp0->m_centralFrequency + bwp0->m_channelBandwidth / 2;
 
-  cc0->AddBwp (std::move (bwp0));
+    cc0->AddBwp(std::move(bwp0));
 
-  // BWP 1
-  bwp1->m_bwpId = 1;
-  bwp1->m_centralFrequency = cc0->m_higherFrequency - cc0->m_channelBandwidth / 4;
-  bwp1->m_channelBandwidth = bandwidthCc0Bpw1;
-  bwp1->m_lowerFrequency = bwp1->m_centralFrequency - bwp1->m_channelBandwidth / 2;
-  bwp1->m_higherFrequency = bwp1->m_centralFrequency + bwp1->m_channelBandwidth / 2;
+    // BWP 1
+    bwp1->m_bwpId = 1;
+    bwp1->m_centralFrequency = cc0->m_higherFrequency - cc0->m_channelBandwidth / 4;
+    bwp1->m_channelBandwidth = bandwidthCc0Bpw1;
+    bwp1->m_lowerFrequency = bwp1->m_centralFrequency - bwp1->m_channelBandwidth / 2;
+    bwp1->m_higherFrequency = bwp1->m_centralFrequency + bwp1->m_channelBandwidth / 2;
 
-  cc0->AddBwp (std::move (bwp1));
+    cc0->AddBwp(std::move(bwp1));
 
-  // Add CC to the corresponding operation band.
-  band.AddCc (std::move (cc0));
-  /********************* END Spectrum division ****************************/
+    // Add CC to the corresponding operation band.
+    band.AddCc(std::move(cc0));
+    /********************* END Spectrum division ****************************/
 
-  nrHelper->SetPathlossAttribute ("ShadowingEnabled", BooleanValue (false));
-  epcHelper->SetAttribute ("S1uLinkDelay", TimeValue (MilliSeconds (0)));
+    nrHelper->SetPathlossAttribute("ShadowingEnabled", BooleanValue(false));
+    epcHelper->SetAttribute("S1uLinkDelay", TimeValue(MilliSeconds(0)));
 
-  //Set gNB scheduler
-  nrHelper->SetSchedulerTypeId (TypeId::LookupByName ("ns3::NrMacSchedulerTdmaRR"));
+    // Set gNB scheduler
+    nrHelper->SetSchedulerTypeId(TypeId::LookupByName("ns3::NrMacSchedulerTdmaRR"));
 
-  //gNB Beamforming method
-  if (cellScan)
+    // gNB Beamforming method
+    if (cellScan)
     {
-      idealBeamformingHelper->SetAttribute ("BeamformingMethod", TypeIdValue (CellScanBeamforming::GetTypeId ()));
-      idealBeamformingHelper->SetBeamformingAlgorithmAttribute ("BeamSearchAngleStep", DoubleValue (beamSearchAngleStep));
+        idealBeamformingHelper->SetAttribute("BeamformingMethod",
+                                             TypeIdValue(CellScanBeamforming::GetTypeId()));
+        idealBeamformingHelper->SetBeamformingAlgorithmAttribute("BeamSearchAngleStep",
+                                                                 DoubleValue(beamSearchAngleStep));
     }
-  else
+    else
     {
-      idealBeamformingHelper->SetAttribute ("BeamformingMethod", TypeIdValue (DirectPathBeamforming::GetTypeId ()));
-    }
-
-  nrHelper->InitializeOperationBand (&band);
-  allBwps = CcBwpCreator::GetAllBwps ({band});
-
-  // Antennas for all the UEs
-  nrHelper->SetUeAntennaAttribute ("NumRows", UintegerValue (1)); // From SL examples
-  nrHelper->SetUeAntennaAttribute ("NumColumns", UintegerValue (2)); // From SL examples
-  nrHelper->SetUeAntennaAttribute ("AntennaElement", PointerValue (CreateObject<IsotropicAntennaModel> ()));
-
-  nrHelper->SetUePhyAttribute ("TxPower", DoubleValue (ueTxPower));
-
-  // Antennas for all the gNbs
-  nrHelper->SetGnbAntennaAttribute ("NumRows", UintegerValue (4));
-  nrHelper->SetGnbAntennaAttribute ("NumColumns", UintegerValue (8));
-  nrHelper->SetGnbAntennaAttribute ("AntennaElement", PointerValue (CreateObject<IsotropicAntennaModel> ()));
-
-  //gNB bandwidth part manager setup.
-  //The current algorithm multiplexes BWPs depending on the associated bearer QCI
-  nrHelper->SetGnbBwpManagerAlgorithmAttribute ("GBR_CONV_VOICE", UintegerValue (0)); // The BWP index is 0 because only one BWP will be installed in the eNB
-
-  //Install only in the BWP that will be used for in-network
-  uint8_t bwpIdInNet = 0;
-  BandwidthPartInfoPtrVector inNetBwp;
-  inNetBwp.insert (inNetBwp.end (), band.GetBwpAt (/*CC*/ 0,bwpIdInNet));
-  NetDeviceContainer inNetUeNetDev = nrHelper->InstallUeDevice (inNetUeNodes, inNetBwp);
-  NetDeviceContainer enbNetDev = nrHelper->InstallGnbDevice (gNbNodes, inNetBwp);
-
-  //SL UE MAC configuration
-  nrHelper->SetUeMacAttribute ("EnableSensing", BooleanValue (enableSensing));
-  nrHelper->SetUeMacAttribute ("T1", UintegerValue (2));
-  nrHelper->SetUeMacAttribute ("T2", UintegerValue (33));
-  nrHelper->SetUeMacAttribute ("ActivePoolId", UintegerValue (0));
-  nrHelper->SetUeMacAttribute ("NumSidelinkProcess", UintegerValue (255));
-  nrHelper->SetUeMacAttribute ("SlThresPsschRsrp", IntegerValue (-128));
-
-  //SL BWP manager configuration
-  uint8_t bwpIdSl = 1;
-  nrHelper->SetBwpManagerTypeId (TypeId::LookupByName ("ns3::NrSlBwpManagerUe"));
-  nrHelper->SetUeBwpManagerAlgorithmAttribute ("GBR_MC_PUSH_TO_TALK", UintegerValue (bwpIdSl));
-
-
-  //Install both BWPs on U2N relays
-  NetDeviceContainer relayUeNetDev = nrHelper->InstallUeDevice (relayUeNodes, allBwps);
-
-  //Install both BWPs on SL-only UEs
-  //This was needed to avoid errors with bwpId and vector indexes during device installation
-  NetDeviceContainer remoteUeNetDev = nrHelper->InstallUeDevice (remoteUeNodes, allBwps );
-  std::set<uint8_t> slBwpIdContainer;
-  slBwpIdContainer.insert (bwpIdInNet);
-  slBwpIdContainer.insert (bwpIdSl);
-
-  //Setup BWPs numerology, Tx Power and pattern
-  nrHelper->GetGnbPhy (enbNetDev.Get (0), 0)->SetAttribute ("Numerology", UintegerValue (numerologyCc0Bwp0));
-  nrHelper->GetGnbPhy (enbNetDev.Get (0), 0)->SetAttribute ("Pattern", StringValue (pattern));
-  nrHelper->GetGnbPhy (enbNetDev.Get (0), 0)->SetAttribute ("TxPower", DoubleValue (gNBtotalTxPower));
-
-  for (auto it = enbNetDev.Begin (); it != enbNetDev.End (); ++it)
-    {
-      DynamicCast<NrGnbNetDevice> (*it)->UpdateConfig ();
-    }
-  for (auto it = inNetUeNetDev.Begin (); it != inNetUeNetDev.End (); ++it)
-    {
-      DynamicCast<NrUeNetDevice> (*it)->UpdateConfig ();
-    }
-  for (auto it = relayUeNetDev.Begin (); it != relayUeNetDev.End (); ++it)
-    {
-      DynamicCast<NrUeNetDevice> (*it)->UpdateConfig ();
-    }
-  for (auto it = remoteUeNetDev.Begin (); it != remoteUeNetDev.End (); ++it)
-    {
-      DynamicCast<NrUeNetDevice> (*it)->UpdateConfig ();
+        idealBeamformingHelper->SetAttribute("BeamformingMethod",
+                                             TypeIdValue(DirectPathBeamforming::GetTypeId()));
     }
 
+    nrHelper->InitializeOperationBand(&band);
+    allBwps = CcBwpCreator::GetAllBwps({band});
 
-  /* Create NrSlHelper which will configure the UEs protocol stack to be ready to
-   * perform Sidelink related procedures
-   */
-  Ptr<NrSlHelper> nrSlHelper = CreateObject <NrSlHelper> ();
-  nrSlHelper->SetEpcHelper (epcHelper);
+    // Antennas for all the UEs
+    nrHelper->SetUeAntennaAttribute("NumRows", UintegerValue(1));    // From SL examples
+    nrHelper->SetUeAntennaAttribute("NumColumns", UintegerValue(2)); // From SL examples
+    nrHelper->SetUeAntennaAttribute("AntennaElement",
+                                    PointerValue(CreateObject<IsotropicAntennaModel>()));
 
-  //Set the SL error model and AMC
-  std::string errorModel = "ns3::NrEesmIrT1";
-  nrSlHelper->SetSlErrorModel (errorModel);
-  nrSlHelper->SetUeSlAmcAttribute ("AmcModel", EnumValue (NrAmc::ErrorModel));
+    nrHelper->SetUePhyAttribute("TxPower", DoubleValue(ueTxPower));
 
-  //Set the SL scheduler attributes
-  nrSlHelper->SetNrSlSchedulerTypeId (NrSlUeMacSchedulerDefault::GetTypeId ());
-  nrSlHelper->SetUeSlSchedulerAttribute ("FixNrSlMcs", BooleanValue (true));
-  nrSlHelper->SetUeSlSchedulerAttribute ("InitialNrSlMcs", UintegerValue (14));
+    // Antennas for all the gNbs
+    nrHelper->SetGnbAntennaAttribute("NumRows", UintegerValue(4));
+    nrHelper->SetGnbAntennaAttribute("NumColumns", UintegerValue(8));
+    nrHelper->SetGnbAntennaAttribute("AntennaElement",
+                                     PointerValue(CreateObject<IsotropicAntennaModel>()));
 
-  //Configure U2N relay UEs for SL
-  std::set<uint8_t> slBwpIdContainerRelay;
-  slBwpIdContainerRelay.insert (bwpIdSl);   //Only in the SL BWP for the relay UEs
-  nrSlHelper->PrepareUeForSidelink (relayUeNetDev, slBwpIdContainerRelay);
+    // gNB bandwidth part manager setup.
+    // The current algorithm multiplexes BWPs depending on the associated bearer QCI
+    nrHelper->SetGnbBwpManagerAlgorithmAttribute(
+        "GBR_CONV_VOICE",
+        UintegerValue(0)); // The BWP index is 0 because only one BWP will be installed in the eNB
 
-  //Configure SL-only UEs for SL
-  nrSlHelper->PrepareUeForSidelink (remoteUeNetDev, slBwpIdContainer);
+    // Install only in the BWP that will be used for in-network
+    uint8_t bwpIdInNet = 0;
+    BandwidthPartInfoPtrVector inNetBwp;
+    inNetBwp.insert(inNetBwp.end(), band.GetBwpAt(/*CC*/ 0, bwpIdInNet));
+    NetDeviceContainer inNetUeNetDev = nrHelper->InstallUeDevice(inNetUeNodes, inNetBwp);
+    NetDeviceContainer enbNetDev = nrHelper->InstallGnbDevice(gNbNodes, inNetBwp);
 
-  /***SL IEs configuration **/
+    // SL UE MAC configuration
+    nrHelper->SetUeMacTypeId(NrSlUeMac::GetTypeId());
+    nrHelper->SetUeMacAttribute("EnableSensing", BooleanValue(enableSensing));
+    nrHelper->SetUeMacAttribute("T1", UintegerValue(2));
+    nrHelper->SetUeMacAttribute("ActivePoolId", UintegerValue(0));
+    nrHelper->SetUeMacAttribute("NumHarqProcess", UintegerValue(255));
+    nrHelper->SetUeMacAttribute("SlThresPsschRsrp", IntegerValue(-128));
 
-  //SlResourcePoolNr IE
-  LteRrcSap::SlResourcePoolNr slResourcePoolNr;
-  //get it from pool factory
-  Ptr<NrSlCommResourcePoolFactory> ptrFactory = Create<NrSlCommResourcePoolFactory> ();
-  //Configure specific parameters of interest:
-  std::vector <std::bitset<1> > slBitmap = {1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1};
-  ptrFactory->SetSlTimeResources (slBitmap);
-  ptrFactory->SetSlSensingWindow (100); // T0 in ms
-  ptrFactory->SetSlSelectionWindow (5);
-  ptrFactory->SetSlFreqResourcePscch (10); // PSCCH RBs
-  ptrFactory->SetSlSubchannelSize (10);
-  ptrFactory->SetSlMaxNumPerReserve (3);
-  std::list<uint16_t> resourceReservePeriodList = {0, 100}; // in ms
-  ptrFactory->SetSlResourceReservePeriodList (resourceReservePeriodList);
+    // SL BWP manager configuration
+    uint8_t bwpIdSl = 1;
+    nrHelper->SetBwpManagerTypeId(TypeId::LookupByName("ns3::NrSlBwpManagerUe"));
+    nrHelper->SetUeBwpManagerAlgorithmAttribute("GBR_MC_PUSH_TO_TALK", UintegerValue(bwpIdSl));
 
-  //Once parameters are configured, we can create the pool
-  LteRrcSap::SlResourcePoolNr pool = ptrFactory->CreatePool ();
-  slResourcePoolNr = pool;
+    // Install both BWPs on U2N relays
+    NetDeviceContainer relayUeNetDev = nrHelper->InstallUeDevice(relayUeNodes, allBwps);
 
-  //Configure the SlResourcePoolConfigNr IE, which holds a pool and its id
-  LteRrcSap::SlResourcePoolConfigNr slresoPoolConfigNr;
-  slresoPoolConfigNr.haveSlResourcePoolConfigNr = true;
-  //Pool id, ranges from 0 to 15
-  uint16_t poolId = 0;
-  LteRrcSap::SlResourcePoolIdNr slResourcePoolIdNr;
-  slResourcePoolIdNr.id = poolId;
-  slresoPoolConfigNr.slResourcePoolId = slResourcePoolIdNr;
-  slresoPoolConfigNr.slResourcePool = slResourcePoolNr;
+    // Install both BWPs on SL-only UEs
+    // This was needed to avoid errors with bwpId and vector indexes during device installation
+    NetDeviceContainer remoteUeNetDev = nrHelper->InstallUeDevice(remoteUeNodes, allBwps);
+    std::set<uint8_t> slBwpIdContainer;
+    slBwpIdContainer.insert(bwpIdInNet);
+    slBwpIdContainer.insert(bwpIdSl);
 
-  //Configure the SlBwpPoolConfigCommonNr IE, which holds an array of pools
-  LteRrcSap::SlBwpPoolConfigCommonNr slBwpPoolConfigCommonNr;
-  //Array for pools, we insert the pool in the array as per its poolId
-  slBwpPoolConfigCommonNr.slTxPoolSelectedNormal [slResourcePoolIdNr.id] = slresoPoolConfigNr;
+    // Setup BWPs numerology, Tx Power and pattern
+    nrHelper->GetGnbPhy(enbNetDev.Get(0), 0)
+        ->SetAttribute("Numerology", UintegerValue(numerologyCc0Bwp0));
+    nrHelper->GetGnbPhy(enbNetDev.Get(0), 0)->SetAttribute("Pattern", StringValue(pattern));
+    nrHelper->GetGnbPhy(enbNetDev.Get(0), 0)->SetAttribute("TxPower", DoubleValue(gNBtotalTxPower));
 
-  //Configure the BWP IE
-  LteRrcSap::Bwp bwp;
-  bwp.numerology = numerologyCc0Bwp1;
-  bwp.symbolsPerSlots = 14;
-  bwp.rbPerRbg = 1;
-  bwp.bandwidth = bandwidthCc0Bpw1/1000/100; // SL configuration requires BW in Multiple of 100 KHz
-
-  //Configure the SlBwpGeneric IE
-  LteRrcSap::SlBwpGeneric slBwpGeneric;
-  slBwpGeneric.bwp = bwp;
-  slBwpGeneric.slLengthSymbols = LteRrcSap::GetSlLengthSymbolsEnum (14);
-  slBwpGeneric.slStartSymbol = LteRrcSap::GetSlStartSymbolEnum (0);
-
-  //Configure the SlBwpConfigCommonNr IE
-  LteRrcSap::SlBwpConfigCommonNr slBwpConfigCommonNr;
-  slBwpConfigCommonNr.haveSlBwpGeneric = true;
-  slBwpConfigCommonNr.slBwpGeneric = slBwpGeneric;
-  slBwpConfigCommonNr.haveSlBwpPoolConfigCommonNr = true;
-  slBwpConfigCommonNr.slBwpPoolConfigCommonNr = slBwpPoolConfigCommonNr;
-
-  //Configure the SlFreqConfigCommonNr IE, which holds the array to store
-  //the configuration of all Sidelink BWP (s).
-  LteRrcSap::SlFreqConfigCommonNr slFreConfigCommonNr;
-  //Array for BWPs. Here we will iterate over the BWPs, which
-  //we want to use for SL.
-  for (const auto &it:slBwpIdContainer)
+    for (auto it = enbNetDev.Begin(); it != enbNetDev.End(); ++it)
     {
-      // it is the BWP id
-      slFreConfigCommonNr.slBwpList [it] = slBwpConfigCommonNr;
+        DynamicCast<NrGnbNetDevice>(*it)->UpdateConfig();
+    }
+    for (auto it = inNetUeNetDev.Begin(); it != inNetUeNetDev.End(); ++it)
+    {
+        DynamicCast<NrUeNetDevice>(*it)->UpdateConfig();
+    }
+    for (auto it = relayUeNetDev.Begin(); it != relayUeNetDev.End(); ++it)
+    {
+        DynamicCast<NrUeNetDevice>(*it)->UpdateConfig();
+    }
+    for (auto it = remoteUeNetDev.Begin(); it != remoteUeNetDev.End(); ++it)
+    {
+        DynamicCast<NrUeNetDevice>(*it)->UpdateConfig();
     }
 
-  //Configure the TddUlDlConfigCommon IE
-  LteRrcSap::TddUlDlConfigCommon tddUlDlConfigCommon;
-  tddUlDlConfigCommon.tddPattern = pattern;
+    /* Create NrSlHelper which will configure the UEs protocol stack to be ready to
+     * perform Sidelink related procedures
+     */
+    Ptr<NrSlHelper> nrSlHelper = CreateObject<NrSlHelper>();
+    nrSlHelper->SetEpcHelper(epcHelper);
 
-  //Configure the SlPreconfigGeneralNr IE
-  LteRrcSap::SlPreconfigGeneralNr slPreconfigGeneralNr;
-  slPreconfigGeneralNr.slTddConfig = tddUlDlConfigCommon;
+    // Set the SL error model and AMC
+    std::string errorModel = "ns3::NrEesmIrT1";
+    nrSlHelper->SetSlErrorModel(errorModel);
+    nrSlHelper->SetUeSlAmcAttribute("AmcModel", EnumValue(NrAmc::ErrorModel));
 
-  //Configure the SlUeSelectedConfig IE
-  LteRrcSap::SlUeSelectedConfig slUeSelectedPreConfig;
-  slUeSelectedPreConfig.slProbResourceKeep = 0;
-  //Configure the SlPsschTxParameters IE
-  LteRrcSap::SlPsschTxParameters psschParams;
-  psschParams.slMaxTxTransNumPssch = 5;
-  //Configure the SlPsschTxConfigList IE
-  LteRrcSap::SlPsschTxConfigList pscchTxConfigList;
-  pscchTxConfigList.slPsschTxParameters [0] = psschParams;
-  slUeSelectedPreConfig.slPsschTxConfigList = pscchTxConfigList;
+    // Set the SL scheduler attributes
+    nrSlHelper->SetNrSlSchedulerTypeId(NrSlUeMacSchedulerFixedMcs::GetTypeId());
+    nrSlHelper->SetUeSlSchedulerAttribute("Mcs", UintegerValue(14));
 
-  /*
-   * Finally, configure the SidelinkPreconfigNr This is the main structure
-   * that needs to be communicated to NrSlUeRrc class
-   */
-  LteRrcSap::SidelinkPreconfigNr slPreConfigNr;
-  slPreConfigNr.slPreconfigGeneral = slPreconfigGeneralNr;
-  slPreConfigNr.slUeSelectedPreConfig = slUeSelectedPreConfig;
-  slPreConfigNr.slPreconfigFreqInfoList [0] = slFreConfigCommonNr;
+    // Configure U2N relay UEs for SL
+    std::set<uint8_t> slBwpIdContainerRelay;
+    slBwpIdContainerRelay.insert(bwpIdSl); // Only in the SL BWP for the relay UEs
+    nrSlHelper->PrepareUeForSidelink(relayUeNetDev, slBwpIdContainerRelay);
 
-  //Communicate the above pre-configuration to the NrSlHelper
-  //For SL-only UEs
-  nrSlHelper->InstallNrSlPreConfiguration (remoteUeNetDev, slPreConfigNr);
+    // Configure SL-only UEs for SL
+    nrSlHelper->PrepareUeForSidelink(remoteUeNetDev, slBwpIdContainer);
 
-  //For U2N relay UEs
-  //We need to modify some parameters to configure *only* BWP1 on the relay for
-  // SL and avoid MAC problems
-  LteRrcSap::SlFreqConfigCommonNr slFreConfigCommonNrRelay;
-  slFreConfigCommonNrRelay.slBwpList [bwpIdSl] = slBwpConfigCommonNr;
+    /***SL IEs configuration **/
 
-  LteRrcSap::SidelinkPreconfigNr slPreConfigNrRelay;
-  slPreConfigNrRelay.slPreconfigGeneral = slPreconfigGeneralNr;
-  slPreConfigNrRelay.slUeSelectedPreConfig = slUeSelectedPreConfig;
-  slPreConfigNrRelay.slPreconfigFreqInfoList [0] = slFreConfigCommonNrRelay;
+    // SlResourcePoolNr IE
+    LteRrcSap::SlResourcePoolNr slResourcePoolNr;
+    // get it from pool factory
+    Ptr<NrSlCommResourcePoolFactory> ptrFactory = Create<NrSlCommResourcePoolFactory>();
+    // Configure specific parameters of interest:
+    std::vector<std::bitset<1>> slBitmap = {1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1};
+    ptrFactory->SetSlTimeResources(slBitmap);
+    ptrFactory->SetSlSensingWindow(100); // T0 in ms
+    ptrFactory->SetSlSelectionWindow(5);
+    ptrFactory->SetSlFreqResourcePscch(10); // PSCCH RBs
+    ptrFactory->SetSlSubchannelSize(10);
+    ptrFactory->SetSlMaxNumPerReserve(3);
+    std::list<uint16_t> resourceReservePeriodList = {0, 100}; // in ms
+    ptrFactory->SetSlResourceReservePeriodList(resourceReservePeriodList);
 
-  nrSlHelper->InstallNrSlPreConfiguration (relayUeNetDev, slPreConfigNrRelay);
+    // Once parameters are configured, we can create the pool
+    LteRrcSap::SlResourcePoolNr pool = ptrFactory->CreatePool();
+    slResourcePoolNr = pool;
 
-  /***END SL IEs configuration **/
+    // Configure the SlResourcePoolConfigNr IE, which holds a pool and its id
+    LteRrcSap::SlResourcePoolConfigNr slresoPoolConfigNr;
+    slresoPoolConfigNr.haveSlResourcePoolConfigNr = true;
+    // Pool id, ranges from 0 to 15
+    uint16_t poolId = 0;
+    LteRrcSap::SlResourcePoolIdNr slResourcePoolIdNr;
+    slResourcePoolIdNr.id = poolId;
+    slresoPoolConfigNr.slResourcePoolId = slResourcePoolIdNr;
+    slresoPoolConfigNr.slResourcePool = slResourcePoolNr;
 
-  //Set random streams
-  int64_t randomStream = 1;
-  randomStream += nrHelper->AssignStreams (enbNetDev, randomStream);
-  randomStream += nrHelper->AssignStreams (inNetUeNetDev, randomStream);
-  randomStream += nrHelper->AssignStreams (relayUeNetDev, randomStream);
-  randomStream += nrSlHelper->AssignStreams (relayUeNetDev, randomStream);
-  randomStream += nrHelper->AssignStreams (remoteUeNetDev, randomStream);
-  randomStream += nrSlHelper->AssignStreams (remoteUeNetDev, randomStream);
+    // Configure the SlBwpPoolConfigCommonNr IE, which holds an array of pools
+    LteRrcSap::SlBwpPoolConfigCommonNr slBwpPoolConfigCommonNr;
+    // Array for pools, we insert the pool in the array as per its poolId
+    slBwpPoolConfigCommonNr.slTxPoolSelectedNormal[slResourcePoolIdNr.id] = slresoPoolConfigNr;
 
+    // Configure the BWP IE
+    LteRrcSap::Bwp bwp;
+    bwp.numerology = numerologyCc0Bwp1;
+    bwp.symbolsPerSlots = 14;
+    bwp.rbPerRbg = 1;
+    bwp.bandwidth =
+        bandwidthCc0Bpw1 / 1000 / 100; // SL configuration requires BW in Multiple of 100 KHz
 
-  // create the internet and install the IP stack on the UEs
-  // get SGW/PGW and create a single RemoteHost
-  Ptr<Node> pgw = epcHelper->GetPgwNode ();
-  NodeContainer remoteHostContainer;
-  remoteHostContainer.Create (1);
-  Ptr<Node> remoteHost = remoteHostContainer.Get (0);
-  InternetStackHelper internet;
-  internet.Install (remoteHostContainer);
+    // Configure the SlBwpGeneric IE
+    LteRrcSap::SlBwpGeneric slBwpGeneric;
+    slBwpGeneric.bwp = bwp;
+    slBwpGeneric.slLengthSymbols = LteRrcSap::GetSlLengthSymbolsEnum(14);
+    slBwpGeneric.slStartSymbol = LteRrcSap::GetSlStartSymbolEnum(0);
 
-  // connect a remoteHost to pgw. Setup routing too
-  PointToPointHelper p2ph;
-  p2ph.SetDeviceAttribute ("DataRate", DataRateValue (DataRate ("100Gb/s")));
-  p2ph.SetDeviceAttribute ("Mtu", UintegerValue (2500));
-  p2ph.SetChannelAttribute ("Delay", TimeValue (Seconds (0.000)));
-  NetDeviceContainer internetDevices = p2ph.Install (pgw, remoteHost);
-  Ipv4AddressHelper ipv4h;
-  Ipv4StaticRoutingHelper ipv4RoutingHelper;
-  ipv4h.SetBase ("1.0.0.0", "255.0.0.0");
-  Ipv4InterfaceContainer internetIpIfaces = ipv4h.Assign (internetDevices);
-  Ptr<Ipv4StaticRouting> remoteHostStaticRouting = ipv4RoutingHelper.GetStaticRouting (remoteHost->GetObject<Ipv4> ());
-  remoteHostStaticRouting->AddNetworkRouteTo (Ipv4Address ("7.0.0.0"), Ipv4Mask ("255.0.0.0"), 1);
-  Ipv4Address remoteHostAddr = internetIpIfaces.GetAddress (1);
+    // Configure the SlBwpConfigCommonNr IE
+    LteRrcSap::SlBwpConfigCommonNr slBwpConfigCommonNr;
+    slBwpConfigCommonNr.haveSlBwpGeneric = true;
+    slBwpConfigCommonNr.slBwpGeneric = slBwpGeneric;
+    slBwpConfigCommonNr.haveSlBwpPoolConfigCommonNr = true;
+    slBwpConfigCommonNr.slBwpPoolConfigCommonNr = slBwpPoolConfigCommonNr;
 
-  std::cout << "IP configuration: " << std::endl;
-  std::cout << " Remote Host: " << remoteHostAddr << std::endl;
-
-  // Configure in-network only UEs
-  internet.Install (inNetUeNodes);
-  Ipv4InterfaceContainer ueIpIface;
-  ueIpIface = epcHelper->AssignUeIpv4Address (NetDeviceContainer (inNetUeNetDev));
-  std::vector<Ipv4Address> inNetIpv4AddressVector (nInNetUes);
-
-  // Set the default gateway for the in-network UEs
-  for (uint32_t j = 0; j < inNetUeNodes.GetN (); ++j)
+    // Configure the SlFreqConfigCommonNr IE, which holds the array to store
+    // the configuration of all Sidelink BWP (s).
+    LteRrcSap::SlFreqConfigCommonNr slFreConfigCommonNr;
+    // Array for BWPs. Here we will iterate over the BWPs, which
+    // we want to use for SL.
+    for (const auto& it : slBwpIdContainer)
     {
-      Ptr<Ipv4StaticRouting> ueStaticRouting =
-        ipv4RoutingHelper.GetStaticRouting (inNetUeNodes.Get (j)->GetObject<Ipv4> ());
-      ueStaticRouting->SetDefaultRoute (epcHelper->GetUeDefaultGatewayAddress (), 1);
-      inNetIpv4AddressVector [j] = inNetUeNodes.Get (j)->GetObject<Ipv4L3Protocol> ()->GetAddress (1,0).GetLocal ();
-      std::cout << " In-network UE: " << inNetIpv4AddressVector [j] << std::endl;
+        // it is the BWP id
+        slFreConfigCommonNr.slBwpList[it] = slBwpConfigCommonNr;
     }
 
-  //Attach in-network UEs to the closest gNB
-  nrHelper->AttachToClosestEnb (inNetUeNetDev, enbNetDev);
+    // Configure the TddUlDlConfigCommon IE
+    LteRrcSap::TddUlDlConfigCommon tddUlDlConfigCommon;
+    tddUlDlConfigCommon.tddPattern = pattern;
 
-  // Configure U2N relay UEs
-  internet.Install (relayUeNodes);
-  Ipv4InterfaceContainer ueIpIfaceRelays;
-  ueIpIfaceRelays = epcHelper->AssignUeIpv4Address (NetDeviceContainer (relayUeNetDev));
-  std::vector<Ipv4Address> relaysIpv4AddressVector (nRelayUes);
+    // Configure the SlPreconfigGeneralNr IE
+    LteRrcSap::SlPreconfigGeneralNr slPreconfigGeneralNr;
+    slPreconfigGeneralNr.slTddConfig = tddUlDlConfigCommon;
 
-  for (uint32_t u = 0; u < relayUeNodes.GetN (); ++u)
+    // Configure the SlUeSelectedConfig IE
+    LteRrcSap::SlUeSelectedConfig slUeSelectedPreConfig;
+    slUeSelectedPreConfig.slProbResourceKeep = 0;
+    // Configure the SlPsschTxParameters IE
+    LteRrcSap::SlPsschTxParameters psschParams;
+    psschParams.slMaxTxTransNumPssch = 5;
+    // Configure the SlPsschTxConfigList IE
+    LteRrcSap::SlPsschTxConfigList pscchTxConfigList;
+    pscchTxConfigList.slPsschTxParameters[0] = psschParams;
+    slUeSelectedPreConfig.slPsschTxConfigList = pscchTxConfigList;
+
+    /*
+     * Finally, configure the SidelinkPreconfigNr This is the main structure
+     * that needs to be communicated to NrSlUeRrc class
+     */
+    LteRrcSap::SidelinkPreconfigNr slPreConfigNr;
+    slPreConfigNr.slPreconfigGeneral = slPreconfigGeneralNr;
+    slPreConfigNr.slUeSelectedPreConfig = slUeSelectedPreConfig;
+    slPreConfigNr.slPreconfigFreqInfoList[0] = slFreConfigCommonNr;
+
+    // Communicate the above pre-configuration to the NrSlHelper
+    // For SL-only UEs
+    nrSlHelper->InstallNrSlPreConfiguration(remoteUeNetDev, slPreConfigNr);
+
+    // For U2N relay UEs
+    // We need to modify some parameters to configure *only* BWP1 on the relay for
+    //  SL and avoid MAC problems
+    LteRrcSap::SlFreqConfigCommonNr slFreConfigCommonNrRelay;
+    slFreConfigCommonNrRelay.slBwpList[bwpIdSl] = slBwpConfigCommonNr;
+
+    LteRrcSap::SidelinkPreconfigNr slPreConfigNrRelay;
+    slPreConfigNrRelay.slPreconfigGeneral = slPreconfigGeneralNr;
+    slPreConfigNrRelay.slUeSelectedPreConfig = slUeSelectedPreConfig;
+    slPreConfigNrRelay.slPreconfigFreqInfoList[0] = slFreConfigCommonNrRelay;
+
+    nrSlHelper->InstallNrSlPreConfiguration(relayUeNetDev, slPreConfigNrRelay);
+
+    /***END SL IEs configuration **/
+
+    // Set random streams
+    int64_t randomStream = 1;
+    randomStream += nrHelper->AssignStreams(enbNetDev, randomStream);
+    randomStream += nrHelper->AssignStreams(inNetUeNetDev, randomStream);
+    randomStream += nrHelper->AssignStreams(relayUeNetDev, randomStream);
+    randomStream += nrSlHelper->AssignStreams(relayUeNetDev, randomStream);
+    randomStream += nrHelper->AssignStreams(remoteUeNetDev, randomStream);
+    randomStream += nrSlHelper->AssignStreams(remoteUeNetDev, randomStream);
+
+    // create the internet and install the IP stack on the UEs
+    // get SGW/PGW and create a single RemoteHost
+    Ptr<Node> pgw = epcHelper->GetPgwNode();
+    NodeContainer remoteHostContainer;
+    remoteHostContainer.Create(1);
+    Ptr<Node> remoteHost = remoteHostContainer.Get(0);
+    InternetStackHelper internet;
+    internet.Install(remoteHostContainer);
+
+    // connect a remoteHost to pgw. Setup routing too
+    PointToPointHelper p2ph;
+    p2ph.SetDeviceAttribute("DataRate", DataRateValue(DataRate("100Gb/s")));
+    p2ph.SetDeviceAttribute("Mtu", UintegerValue(2500));
+    p2ph.SetChannelAttribute("Delay", TimeValue(Seconds(0.000)));
+    NetDeviceContainer internetDevices = p2ph.Install(pgw, remoteHost);
+    Ipv4AddressHelper ipv4h;
+    Ipv4StaticRoutingHelper ipv4RoutingHelper;
+    ipv4h.SetBase("1.0.0.0", "255.0.0.0");
+    Ipv4InterfaceContainer internetIpIfaces = ipv4h.Assign(internetDevices);
+    Ptr<Ipv4StaticRouting> remoteHostStaticRouting =
+        ipv4RoutingHelper.GetStaticRouting(remoteHost->GetObject<Ipv4>());
+    remoteHostStaticRouting->AddNetworkRouteTo(Ipv4Address("7.0.0.0"), Ipv4Mask("255.0.0.0"), 1);
+    Ipv4Address remoteHostAddr = internetIpIfaces.GetAddress(1);
+
+    std::cout << "IP configuration: " << std::endl;
+    std::cout << " Remote Host: " << remoteHostAddr << std::endl;
+
+    // Configure in-network only UEs
+    internet.Install(inNetUeNodes);
+    Ipv4InterfaceContainer ueIpIface;
+    ueIpIface = epcHelper->AssignUeIpv4Address(NetDeviceContainer(inNetUeNetDev));
+    std::vector<Ipv4Address> inNetIpv4AddressVector(nInNetUes);
+
+    // Set the default gateway for the in-network UEs
+    for (uint32_t j = 0; j < inNetUeNodes.GetN(); ++j)
     {
-      // Set the default gateway for the UE
-      Ptr<Ipv4StaticRouting> ueStaticRouting =
-        ipv4RoutingHelper.GetStaticRouting (relayUeNodes.Get (u)->GetObject<Ipv4> ());
-      ueStaticRouting->SetDefaultRoute (epcHelper->GetUeDefaultGatewayAddress (), 1);
-
-      //Obtain local IPv4 addresses that will be used to route the unicast traffic upon setup of the direct link
-      relaysIpv4AddressVector [u] = relayUeNodes.Get (u)->GetObject<Ipv4L3Protocol> ()->GetAddress (1,0).GetLocal ();
-      std::cout << " Relay UE: " << relaysIpv4AddressVector [u] << std::endl;
+        Ptr<Ipv4StaticRouting> ueStaticRouting =
+            ipv4RoutingHelper.GetStaticRouting(inNetUeNodes.Get(j)->GetObject<Ipv4>());
+        ueStaticRouting->SetDefaultRoute(epcHelper->GetUeDefaultGatewayAddress(), 1);
+        inNetIpv4AddressVector[j] =
+            inNetUeNodes.Get(j)->GetObject<Ipv4L3Protocol>()->GetAddress(1, 0).GetLocal();
+        std::cout << " In-network UE: " << inNetIpv4AddressVector[j] << std::endl;
     }
 
-  //Attach U2N relay UEs to the closest gNB
-  nrHelper->AttachToClosestEnb (relayUeNetDev, enbNetDev);
+    // Attach in-network UEs to the closest gNB
+    nrHelper->AttachToClosestEnb(inNetUeNetDev, enbNetDev);
 
-  // Configure out-of-network UEs
-  internet.Install (remoteUeNodes);
-  Ipv4InterfaceContainer ueIpIfaceSl;
-  ueIpIfaceSl = epcHelper->AssignUeIpv4Address (NetDeviceContainer (remoteUeNetDev));
-  std::vector<Ipv4Address> remotesIpv4AddressVector (nRemoteUes);
+    // Configure U2N relay UEs
+    internet.Install(relayUeNodes);
+    Ipv4InterfaceContainer ueIpIfaceRelays;
+    ueIpIfaceRelays = epcHelper->AssignUeIpv4Address(NetDeviceContainer(relayUeNetDev));
+    std::vector<Ipv4Address> relaysIpv4AddressVector(nRelayUes);
 
-  for (uint32_t u = 0; u < remoteUeNodes.GetN (); ++u)
+    for (uint32_t u = 0; u < relayUeNodes.GetN(); ++u)
     {
-      // Set the default gateway for the UE
-      Ptr<Ipv4StaticRouting> ueStaticRouting =
-        ipv4RoutingHelper.GetStaticRouting (remoteUeNodes.Get (u)->GetObject<Ipv4> ());
-      ueStaticRouting->SetDefaultRoute (epcHelper->GetUeDefaultGatewayAddress (), 1);
+        // Set the default gateway for the UE
+        Ptr<Ipv4StaticRouting> ueStaticRouting =
+            ipv4RoutingHelper.GetStaticRouting(relayUeNodes.Get(u)->GetObject<Ipv4>());
+        ueStaticRouting->SetDefaultRoute(epcHelper->GetUeDefaultGatewayAddress(), 1);
 
-      //Obtain local IPv4 addresses that will be used to route the unicast traffic upon setup of the direct link
-      remotesIpv4AddressVector [u] = remoteUeNodes.Get (u)->GetObject<Ipv4L3Protocol> ()->GetAddress (1,0).GetLocal ();
-      std::cout << " Remote UE: " << remotesIpv4AddressVector [u] << std::endl;
+        // Obtain local IPv4 addresses that will be used to route the unicast traffic upon setup of
+        // the direct link
+        relaysIpv4AddressVector[u] =
+            relayUeNodes.Get(u)->GetObject<Ipv4L3Protocol>()->GetAddress(1, 0).GetLocal();
+        std::cout << " Relay UE: " << relaysIpv4AddressVector[u] << std::endl;
     }
 
+    // Attach U2N relay UEs to the closest gNB
+    nrHelper->AttachToClosestEnb(relayUeNetDev, enbNetDev);
 
-  /******** Configure ProSe layer in the UEs that will do SL  **********/
-  //Create ProSe helper
-  Ptr<NrSlProseHelper> nrSlProseHelper = CreateObject <NrSlProseHelper> ();
-  nrSlProseHelper->SetEpcHelper (epcHelper);
+    // Configure out-of-network UEs
+    internet.Install(remoteUeNodes);
+    Ipv4InterfaceContainer ueIpIfaceSl;
+    ueIpIfaceSl = epcHelper->AssignUeIpv4Address(NetDeviceContainer(remoteUeNetDev));
+    std::vector<Ipv4Address> remotesIpv4AddressVector(nRemoteUes);
 
-  // Install ProSe layer and corresponding SAPs in the UEs
-  nrSlProseHelper->PrepareUesForProse (relayUeNetDev);
-  nrSlProseHelper->PrepareUesForProse (remoteUeNetDev);
-
-  //Configure ProSe Unicast parameters. At the moment it only instruct the MAC
-  //layer (and PHY therefore) to monitor packets directed the UE's own Layer 2 ID
-  nrSlProseHelper->PrepareUesForUnicast (relayUeNetDev);
-  nrSlProseHelper->PrepareUesForUnicast (remoteUeNetDev);
-
-  //Configure the value of timer Timer T5080 (Prose Direct Link Establishment Request Retransmission)
-  //to a lower value than the standard (8.0 s) to speed connection in shorter simulation time
-  Config::SetDefault ("ns3::NrSlUeProseDirectLink::T5080", TimeValue (Seconds (2.0)));
-  /******** END Configure ProSe layer in the UEs that will do SL  **********/
-
-
-  /******************** L3 U2N Relay configuration ***************************/
-  //Provision L3 U2N configuration on the relay UEs
-
-  //-Configure relay service codes
-  // Only one relay service per relay UE can currently be provided
-  uint32_t relayServiceCode = 5;
-  std::set<uint32_t> providedRelaySCs;
-  providedRelaySCs.insert (relayServiceCode);
-
-  //-Configure the UL data radio bearer that the relay UE will use for U2N relaying traffic
-  Ptr<EpcTft> tftRelay = Create<EpcTft> ();
-  EpcTft::PacketFilter pfRelay;
-  tftRelay->Add (pfRelay);
-  enum EpsBearer::Qci qciRelay;
-  qciRelay = EpsBearer::GBR_CONV_VOICE;
-  EpsBearer bearerRelay (qciRelay);
-
-  //Apply the configuration on the devices acting as relay UEs
-  nrSlProseHelper->ConfigureL3UeToNetworkRelay (relayUeNetDev, providedRelaySCs, bearerRelay, tftRelay);
-
-  //Configure direct link connection between remote UEs and relay UEs
-  NS_LOG_INFO ("Configuring remote UE - relay UE connection..." );
-  SidelinkInfo remoteUeSlInfo;
-  remoteUeSlInfo.m_castType = SidelinkInfo::CastType::Unicast;
-  remoteUeSlInfo.m_dynamic = true;
-  remoteUeSlInfo.m_harqEnabled = false;
-  remoteUeSlInfo.m_priority = 0;
-  remoteUeSlInfo.m_rri = Seconds (0);
-
-  SidelinkInfo relayUeSlInfo;
-  relayUeSlInfo.m_castType = SidelinkInfo::CastType::Unicast;
-  relayUeSlInfo.m_dynamic = true;
-  relayUeSlInfo.m_harqEnabled = false;
-  relayUeSlInfo.m_priority = 0;
-  relayUeSlInfo.m_rri = Seconds (0);
-  uint32_t i = 0;
-  for (uint32_t j = 0; j < relayUeNetDev.GetN (); ++j)
+    for (uint32_t u = 0; u < remoteUeNodes.GetN(); ++u)
     {
-      for (uint32_t count = 0; count < nRemoteUesPerRelay ; ++count)
+        // Set the default gateway for the UE
+        Ptr<Ipv4StaticRouting> ueStaticRouting =
+            ipv4RoutingHelper.GetStaticRouting(remoteUeNodes.Get(u)->GetObject<Ipv4>());
+        ueStaticRouting->SetDefaultRoute(epcHelper->GetUeDefaultGatewayAddress(), 1);
+
+        // Obtain local IPv4 addresses that will be used to route the unicast traffic upon setup of
+        // the direct link
+        remotesIpv4AddressVector[u] =
+            remoteUeNodes.Get(u)->GetObject<Ipv4L3Protocol>()->GetAddress(1, 0).GetLocal();
+        std::cout << " Remote UE: " << remotesIpv4AddressVector[u] << std::endl;
+    }
+
+    /******** Configure ProSe layer in the UEs that will do SL  **********/
+    // Create ProSe helper
+    Ptr<NrSlProseHelper> nrSlProseHelper = CreateObject<NrSlProseHelper>();
+    nrSlProseHelper->SetEpcHelper(epcHelper);
+
+    // Install ProSe layer and corresponding SAPs in the UEs
+    nrSlProseHelper->PrepareUesForProse(relayUeNetDev);
+    nrSlProseHelper->PrepareUesForProse(remoteUeNetDev);
+
+    // Configure ProSe Unicast parameters. At the moment it only instruct the MAC
+    // layer (and PHY therefore) to monitor packets directed the UE's own Layer 2 ID
+    nrSlProseHelper->PrepareUesForUnicast(relayUeNetDev);
+    nrSlProseHelper->PrepareUesForUnicast(remoteUeNetDev);
+
+    // Configure the value of timer Timer T5080 (Prose Direct Link Establishment Request
+    // Retransmission) to a lower value than the standard (8.0 s) to speed connection in shorter
+    // simulation time
+    Config::SetDefault("ns3::NrSlUeProseDirectLink::T5080", TimeValue(Seconds(2.0)));
+    /******** END Configure ProSe layer in the UEs that will do SL  **********/
+
+    /******************** L3 U2N Relay configuration ***************************/
+    // Provision L3 U2N configuration on the relay UEs
+
+    //-Configure relay service codes
+    // Only one relay service per relay UE can currently be provided
+    uint32_t relayServiceCode = 5;
+    std::set<uint32_t> providedRelaySCs;
+    providedRelaySCs.insert(relayServiceCode);
+
+    //-Configure the UL data radio bearer that the relay UE will use for U2N relaying traffic
+    Ptr<EpcTft> tftRelay = Create<EpcTft>();
+    EpcTft::PacketFilter pfRelay;
+    tftRelay->Add(pfRelay);
+    enum EpsBearer::Qci qciRelay;
+    qciRelay = EpsBearer::GBR_CONV_VOICE;
+    EpsBearer bearerRelay(qciRelay);
+
+    // Apply the configuration on the devices acting as relay UEs
+    nrSlProseHelper->ConfigureL3UeToNetworkRelay(relayUeNetDev,
+                                                 providedRelaySCs,
+                                                 bearerRelay,
+                                                 tftRelay);
+
+    // Configure direct link connection between remote UEs and relay UEs
+    NS_LOG_INFO("Configuring remote UE - relay UE connection...");
+    SidelinkInfo remoteUeSlInfo;
+    remoteUeSlInfo.m_castType = SidelinkInfo::CastType::Unicast;
+    remoteUeSlInfo.m_dynamic = true;
+    remoteUeSlInfo.m_harqEnabled = false;
+    remoteUeSlInfo.m_priority = 0;
+    remoteUeSlInfo.m_rri = Seconds(0);
+
+    SidelinkInfo relayUeSlInfo;
+    relayUeSlInfo.m_castType = SidelinkInfo::CastType::Unicast;
+    relayUeSlInfo.m_dynamic = true;
+    relayUeSlInfo.m_harqEnabled = false;
+    relayUeSlInfo.m_priority = 0;
+    relayUeSlInfo.m_rri = Seconds(0);
+    uint32_t i = 0;
+    for (uint32_t j = 0; j < relayUeNetDev.GetN(); ++j)
+    {
+        for (uint32_t count = 0; count < nRemoteUesPerRelay; ++count)
         {
-          nrSlProseHelper->EstablishL3UeToNetworkRelayConnection (startRelayConnTime,
-                                                                  remoteUeNetDev.Get (i), remotesIpv4AddressVector [i], remoteUeSlInfo, // Remote UE
-                                                                  relayUeNetDev.Get (j), relaysIpv4AddressVector [j], relayUeSlInfo, // Relay UE
-                                                                  relayServiceCode);
-          NS_LOG_INFO ("Remote UE nodeId " << remoteUeNodes.Get (i)->GetId () <<
-                       " Relay UE nodeId " << relayUeNodes.Get (j)->GetId ());
-          ++i;
+            nrSlProseHelper->EstablishL3UeToNetworkRelayConnection(startRelayConnTime,
+                                                                   remoteUeNetDev.Get(i),
+                                                                   remotesIpv4AddressVector[i],
+                                                                   remoteUeSlInfo, // Remote UE
+                                                                   relayUeNetDev.Get(j),
+                                                                   relaysIpv4AddressVector[j],
+                                                                   relayUeSlInfo, // Relay UE
+                                                                   relayServiceCode);
+            NS_LOG_INFO("Remote UE nodeId " << remoteUeNodes.Get(i)->GetId() << " Relay UE nodeId "
+                                            << relayUeNodes.Get(j)->GetId());
+            ++i;
         }
     }
-  /******************** END L3 U2N Relay configuration ***********************/
+    /******************** END L3 U2N Relay configuration ***********************/
 
 #ifdef HAS_NETSIMULYZER
 
-  std::string netSimOutputFilename = exampleName + "-netsimulyzer.json";
-  auto orchestrator = CreateObject<netsimulyzer::Orchestrator> (netSimOutputFilename);
-  orchestrator->SetAttribute ("PollMobility", BooleanValue (false)); // The Nodes don't move during the simulation, so disable mobility polling
-  orchestrator->SetTimeStep (MilliSeconds(100), Time::MS);
+    std::string netSimOutputFilename = exampleName + "-netsimulyzer.json";
+    auto orchestrator = CreateObject<netsimulyzer::Orchestrator>(netSimOutputFilename);
+    orchestrator->SetAttribute(
+        "PollMobility",
+        BooleanValue(
+            false)); // The Nodes don't move during the simulation, so disable mobility polling
+    orchestrator->SetTimeStep(MilliSeconds(100), Time::MS);
 
-  netsimulyzer::NodeConfigurationHelper nodeHelper {
-    orchestrator
-  };
+    netsimulyzer::NodeConfigurationHelper nodeHelper{orchestrator};
 
-  nodeHelper.Set ("Model", netsimulyzer::models::SMARTPHONE_VALUE);
-  nodeHelper.Set ("HighlightColor", netsimulyzer::OptionalValue<netsimulyzer::Color3>{
-    netsimulyzer::GREEN
-  });
-  for (uint32_t i = 0; i < inNetUeNodes.GetN (); ++i)
+    nodeHelper.Set("Model", netsimulyzer::models::SMARTPHONE_VALUE);
+    nodeHelper.Set("HighlightColor",
+                   netsimulyzer::OptionalValue<netsimulyzer::Color3>{netsimulyzer::GREEN});
+    for (uint32_t i = 0; i < inNetUeNodes.GetN(); ++i)
     {
-      nodeHelper.Set ("Name", StringValue ("InNet UE - Node " + std::to_string (inNetUeNodes.Get (i)->GetId () )));
-      nodeHelper.Install (inNetUeNodes.Get (i));
+        nodeHelper.Set(
+            "Name",
+            StringValue("InNet UE - Node " + std::to_string(inNetUeNodes.Get(i)->GetId())));
+        nodeHelper.Install(inNetUeNodes.Get(i));
     }
-  nodeHelper.Set ("HighlightColor", netsimulyzer::OptionalValue<netsimulyzer::Color3>{
-    netsimulyzer::BLUE
-  });
-  for (uint32_t i = 0; i < relayUeNodes.GetN (); ++i)
+    nodeHelper.Set("HighlightColor",
+                   netsimulyzer::OptionalValue<netsimulyzer::Color3>{netsimulyzer::BLUE});
+    for (uint32_t i = 0; i < relayUeNodes.GetN(); ++i)
     {
-      nodeHelper.Set ("Name", StringValue ("Relay UE - Node " + std::to_string (relayUeNodes.Get (i)->GetId () )));
-      nodeHelper.Install (relayUeNodes.Get (i));
+        nodeHelper.Set(
+            "Name",
+            StringValue("Relay UE - Node " + std::to_string(relayUeNodes.Get(i)->GetId())));
+        nodeHelper.Install(relayUeNodes.Get(i));
     }
-  nodeHelper.Set ("HighlightColor", netsimulyzer::OptionalValue<netsimulyzer::Color3>{
-    netsimulyzer::PURPLE
-  });
-  for (uint32_t i = 0; i < remoteUeNodes.GetN (); ++i)
+    nodeHelper.Set("HighlightColor",
+                   netsimulyzer::OptionalValue<netsimulyzer::Color3>{netsimulyzer::PURPLE});
+    for (uint32_t i = 0; i < remoteUeNodes.GetN(); ++i)
     {
-      nodeHelper.Set ("Name", StringValue ("Remote UE - Node " + std::to_string (remoteUeNodes.Get (i)->GetId () )));
-      nodeHelper.Install (remoteUeNodes.Get (i));
-    }
-
-  nodeHelper.Set ("Model", netsimulyzer::models::CELL_TOWER_POLE_VALUE);
-  nodeHelper.Set ("Height", netsimulyzer::OptionalValue<double> (10));
-  nodeHelper.Set ("Offset", Vector3DValue (Vector3D(0, 0, -10)));
-  nodeHelper.Set ("Name", StringValue ("gNB"));
-  nodeHelper.Install (gNbNodes);
-
-  PointerValue xAxis;
-  PointerValue yAxis;
-  auto dlRxTputCollection = CreateObject<netsimulyzer::SeriesCollection> (orchestrator);
-  dlRxTputCollection->SetAttribute ("Name", StringValue ("Throughput - All UEs - DL - Rx"));
-  dlRxTputCollection->GetAttribute ("XAxis", xAxis);
-  xAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Time (s)"));
-  dlRxTputCollection->GetAttribute ("YAxis", yAxis);
-  yAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Throughput (kb/s)"));
-
-  auto ulRxTputCollection = CreateObject<netsimulyzer::SeriesCollection> (orchestrator);
-  ulRxTputCollection->SetAttribute ("Name", StringValue ("Throughput - All UEs - UL - Rx"));
-  ulRxTputCollection->GetAttribute ("XAxis", xAxis);
-  xAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Time (s)"));
-  ulRxTputCollection->GetAttribute ("YAxis", yAxis);
-  yAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Throughput (kb/s)"));
-
-  auto dlDelayEcdfInNet = CreateObject<netsimulyzer::EcdfSink> (orchestrator, "Delay CDF - All InNet UEs - DL");
-  dlDelayEcdfInNet->GetXAxis ()->SetAttribute ("Name", StringValue ("Packet delay (ms)"));
-  dlDelayEcdfInNet->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-  auto dlDelayEcdfRelays = CreateObject<netsimulyzer::EcdfSink> (orchestrator, "Delay CDF - All Relay UEs - DL");
-  dlDelayEcdfRelays->GetXAxis ()->SetAttribute ("Name", StringValue ("Packet delay (ms)"));
-  dlDelayEcdfRelays->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-  auto dlDelayEcdfRemotes = CreateObject<netsimulyzer::EcdfSink> (orchestrator, "Delay CDF - All Remote UEs - DL");
-  dlDelayEcdfRemotes->GetXAxis ()->SetAttribute ("Name", StringValue ("Packet delay (ms)"));
-  dlDelayEcdfRelays->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-
-  auto ulDelayEcdfInNet = CreateObject<netsimulyzer::EcdfSink> (orchestrator, "Delay CDF - All InNet UEs - UL");
-  ulDelayEcdfInNet->GetXAxis ()->SetAttribute ("Name", StringValue ("Packet delay (ms)"));
-  ulDelayEcdfInNet->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-  auto ulDelayEcdfRelays = CreateObject<netsimulyzer::EcdfSink> (orchestrator, "Delay CDF - All Relay UEs - UL");
-  ulDelayEcdfRelays->GetXAxis ()->SetAttribute ("Name", StringValue ("Packet delay (ms)"));
-  ulDelayEcdfRelays->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-  auto ulDelayEcdfRemotes = CreateObject<netsimulyzer::EcdfSink> (orchestrator, "Delay CDF - All Remote UEs - UL");
-  ulDelayEcdfRemotes->GetXAxis ()->SetAttribute ("Name", StringValue ("Packet delay (ms)"));
-  ulDelayEcdfRemotes->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-
-  auto dlDelayEcdfCollection = CreateObject<netsimulyzer::SeriesCollection> (orchestrator);
-  dlDelayEcdfCollection->SetAttribute ("Name", StringValue ("Delay CDF - All UEs - DL"));
-  dlDelayEcdfCollection->GetAttribute ("XAxis", xAxis);
-  xAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Packet delay (ms)"));
-  dlDelayEcdfCollection->GetAttribute ("YAxis", yAxis);
-  yAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Empirical CDF"));
-  dlDelayEcdfCollection->SetAttribute ("HideAddedSeries", BooleanValue (false));
-  dlDelayEcdfCollection->Add (dlDelayEcdfInNet->GetSeries ());
-  dlDelayEcdfCollection->Add (dlDelayEcdfRelays->GetSeries ());
-  dlDelayEcdfCollection->Add (dlDelayEcdfRemotes->GetSeries ());
-
-  auto ulDelayEcdfCollection = CreateObject<netsimulyzer::SeriesCollection> (orchestrator);
-  ulDelayEcdfCollection->SetAttribute ("Name", StringValue ("Delay CDF - All UEs - UL"));
-  ulDelayEcdfCollection->GetAttribute ("XAxis", xAxis);
-  xAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Packet delay (ms)"));
-  ulDelayEcdfCollection->GetAttribute ("YAxis", yAxis);
-  yAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Empirical CDF"));
-  ulDelayEcdfCollection->SetAttribute ("HideAddedSeries", BooleanValue (false));
-  ulDelayEcdfCollection->Add (ulDelayEcdfInNet->GetSeries ());
-  ulDelayEcdfCollection->Add (ulDelayEcdfRelays->GetSeries ());
-  ulDelayEcdfCollection->Add (ulDelayEcdfRemotes->GetSeries ());
-
-
-#endif
-
-  /************************ Application configuration ************************/
-  /* Client app: OnOff application configured to generate CBR traffic when in
-   *             On periods. Installed in the Remote Host (DL traffic) and in
-   *             the UEs (UL traffic)
-   * Server app: PacketSink application to consume the received traffic.
-   *             Installed in all end nodes (Remote Host and UEs)
-   */
-  uint16_t dlPort = 1000;
-  uint16_t ulPort = dlPort + 1000;
-  ApplicationContainer clientApps, serverApps;
-  // Random variable to randomize a bit start times of the client applications
-  //to avoid simulation artifacts of all the TX UEs transmitting at the same time.
-  Ptr<UniformRandomVariable> startTimeRnd = CreateObject<UniformRandomVariable> ();
-  startTimeRnd->SetAttribute ("Min", DoubleValue (0));
-  startTimeRnd->SetAttribute ("Max", DoubleValue (2.0)); //seconds
-  std::string dataRateString  = std::to_string (onOffDataRate) + "kb/s";
-
-  std::string onDistStr = "ns3::ConstantRandomVariable[Constant=3.0]";
-  std::string offDistStr = "ns3::ConstantRandomVariable[Constant=2.0]";
-
-  Config::SetDefault ("ns3::OnOffApplication::EnableSeqTsSizeHeader", BooleanValue (true));
-  Config::SetDefault ("ns3::PacketSink::EnableSeqTsSizeHeader", BooleanValue (true));
-
-  //InNetwork UEs
-  std::cout << "InNetwork UEs traffic flows: " << std::endl;
-  for (uint32_t inIdx = 0; inIdx < inNetUeNodes.GetN (); ++inIdx)
-    {
-
-      //DL applications configuration
-      //-Client on Remote Host
-      OnOffHelper dlAppOnOffHelper ("ns3::UdpSocketFactory",
-                                    InetSocketAddress (inNetIpv4AddressVector [inIdx], dlPort)); //Towards Remote UE rmIdx IP
-      dlAppOnOffHelper.SetConstantRate (DataRate (dataRateString), onOffPacketSize);
-      dlAppOnOffHelper.SetAttribute ("OnTime", StringValue (onDistStr));
-      dlAppOnOffHelper.SetAttribute ("OffTime", StringValue (offDistStr));
-      ApplicationContainer dlClientApp = dlAppOnOffHelper.Install (remoteHost); // Installed in Remote Host
-      Time dlAppStartTime = timeStartTraffic + Seconds (startTimeRnd->GetValue ());
-      dlClientApp.Start (dlAppStartTime);
-      clientApps.Add (dlClientApp);
-      std::cout << " DL: " << remoteHostAddr << " -> " << inNetIpv4AddressVector [inIdx] <<
-        " start time: " << dlAppStartTime.GetSeconds ()  << " s, end time: " << simTime.GetSeconds () << " s" << std::endl;
-
-#ifdef HAS_NETSIMULYZER
-      uint32_t nodeId = inNetUeNodes.Get (inIdx)->GetId ();
-
-      auto dlUeTputCollection = CreateObject<netsimulyzer::SeriesCollection> (orchestrator);
-      dlUeTputCollection->SetAttribute ("Name", StringValue ("Throughput - InNet UE - DL - Node " + std::to_string (nodeId)));
-      dlUeTputCollection->GetAttribute ("XAxis", xAxis);
-      xAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Time (s)"));
-      dlUeTputCollection->GetAttribute ("YAxis", yAxis);
-      yAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Throughput (kb/s)"));
-      auto dlTxTput = CreateObject<netsimulyzer::ThroughputSink> (orchestrator, "InNet UE - Tx - DL - Node " + std::to_string (nodeId));
-      dlTxTput->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-
-      dlClientApp.Get (0)->TraceConnect ("TxWithSeqTsSize", "tx", MakeBoundCallback (&PacketTraceNetSimulyzer, dlTxTput));
-      dlUeTputCollection->Add (dlTxTput->GetSeries ());
-#endif
-
-      //-Server on UE
-      PacketSinkHelper dlpacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), dlPort));
-      ApplicationContainer dlSeverApp = dlpacketSinkHelper.Install (inNetUeNodes.Get (inIdx));
-      serverApps.Add (dlSeverApp);
-
-#ifdef HAS_NETSIMULYZER
-      auto dlRxTput = CreateObject<netsimulyzer::ThroughputSink> (orchestrator, "Throughput - InNet UE - Rx - DL - Node " + std::to_string (nodeId));
-      dlRxTput->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-      dlSeverApp.Get (0)->TraceConnect ("RxWithSeqTsSize", "rx", MakeBoundCallback (&PacketTraceNetSimulyzer, dlRxTput));
-      dlUeTputCollection->Add (dlRxTput->GetSeries ());
-      dlRxTputCollection->Add (dlRxTput->GetSeries ());
-
-      auto dlRxDelay = CreateObject <netsimulyzer::XYSeries> (orchestrator);
-      dlRxDelay->SetAttribute ("Name", StringValue ("Delay - InNet UE - Rx - DL - Node " + std::to_string (nodeId)));
-      dlRxDelay->SetAttribute ("Color", GetNextColor ());
-      dlRxDelay->SetAttribute ("Connection", StringValue ("None"));
-      dlRxDelay->GetXAxis ()->SetAttribute ("Name", StringValue ("Time (s)"));
-      dlRxDelay->GetYAxis ()->SetAttribute ("Name", StringValue ("Packet delay (ms)"));
-      dlSeverApp.Get (0)->TraceConnectWithoutContext ("RxWithSeqTsSize",
-                                                      MakeBoundCallback (&RxPacketTraceForDelayNetSimulyzer,
-                                                                         dlRxDelay,
-                                                                         dlSeverApp.Get (0)->GetNode (),
-                                                                         inNetIpv4AddressVector [inIdx]));
-      dlSeverApp.Get (0)->TraceConnectWithoutContext ("RxWithSeqTsSize",
-                                                      MakeBoundCallback (&CdfTraceForDelayNetSimulyzer,
-                                                                         dlDelayEcdfInNet,
-                                                                         dlSeverApp.Get (0)->GetNode (),
-                                                                         inNetIpv4AddressVector [inIdx]));
-#endif
-
-      //DL bearer configuration
-      Ptr<EpcTft> tftDl = Create<EpcTft> ();
-      EpcTft::PacketFilter pfDl;
-      pfDl.localPortStart = dlPort;
-      pfDl.localPortEnd = dlPort;
-      ++dlPort;
-      tftDl->Add (pfDl);
-      enum EpsBearer::Qci qDl;
-      qDl = EpsBearer::GBR_CONV_VOICE;
-      EpsBearer bearerDl (qDl);
-      nrHelper->ActivateDedicatedEpsBearer (inNetUeNetDev.Get (inIdx), bearerDl, tftDl);
-
-      //UL application configuration
-      //-Client on UE
-      OnOffHelper ulAppOnOffHelper ("ns3::UdpSocketFactory",
-                                    InetSocketAddress (remoteHostAddr, ulPort)); //Towards Remote Host
-      ulAppOnOffHelper.SetConstantRate (DataRate (dataRateString), onOffPacketSize);
-      ulAppOnOffHelper.SetAttribute ("OnTime", StringValue (onDistStr));
-      ulAppOnOffHelper.SetAttribute ("OffTime", StringValue (offDistStr));
-      ApplicationContainer ulClientApp = ulAppOnOffHelper.Install (inNetUeNodes.Get (inIdx)); // Installed in Remote UE rmIdx
-      Time ulAppStartTime = timeStartTraffic + Seconds (startTimeRnd->GetValue ());
-      ulClientApp.Start (ulAppStartTime);
-      clientApps.Add (ulClientApp);
-      std::cout << " UL: " << inNetIpv4AddressVector [inIdx] << " -> " << remoteHostAddr <<
-        " start time: " << ulAppStartTime.GetSeconds ()  << " s, end time: " << simTime.GetSeconds () << " s" << std::endl;
-
-#ifdef HAS_NETSIMULYZER
-      auto ulUeTputCollection = CreateObject<netsimulyzer::SeriesCollection> (orchestrator);
-      ulUeTputCollection->SetAttribute ("Name", StringValue ("Throughput - InNet UE - UL - Node " + std::to_string (nodeId)));
-      ulUeTputCollection->GetAttribute ("XAxis", xAxis);
-      xAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Time (s)"));
-      ulUeTputCollection->GetAttribute ("YAxis", yAxis);
-      yAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Throughput (kb/s)"));
-
-      auto ulTxTput = CreateObject<netsimulyzer::ThroughputSink> (orchestrator, "Throughput - InNet UE - Tx - UL - Node " + std::to_string (nodeId));
-      ulTxTput->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-      ulClientApp.Get (0)->TraceConnect ("TxWithSeqTsSize", "tx", MakeBoundCallback (&PacketTraceNetSimulyzer, ulTxTput));
-      ulUeTputCollection->Add (ulTxTput->GetSeries ());
-#endif
-
-      //-Server on Remtoe Host
-      PacketSinkHelper ulPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
-      ApplicationContainer ulSeverApp = ulPacketSinkHelper.Install (remoteHost);
-      serverApps.Add (ulSeverApp);
-
-#ifdef HAS_NETSIMULYZER
-      auto ulRxTput = CreateObject<netsimulyzer::ThroughputSink> (orchestrator, "Throughput - InNet UE - Rx - UL - Node " + std::to_string (nodeId));
-      ulRxTput->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-      ulSeverApp.Get (0)->TraceConnect ("RxWithSeqTsSize", "rx", MakeBoundCallback (&PacketTraceNetSimulyzer, ulRxTput));
-      ulUeTputCollection->Add (ulRxTput->GetSeries ());
-      ulRxTputCollection->Add (ulRxTput->GetSeries ());
-
-      auto ulRxDelay = CreateObject <netsimulyzer::XYSeries> (orchestrator);
-      ulRxDelay->SetAttribute ("Name", StringValue ("Delay - InNet UE - Rx - UL - Node " + std::to_string (nodeId)));
-      ulRxDelay->SetAttribute ("Color", GetNextColor ());
-      ulRxDelay->SetAttribute ("Connection", StringValue ("None"));
-      ulRxDelay->GetXAxis ()->SetAttribute ("Name", StringValue ("Time (s)"));
-      ulRxDelay->GetYAxis ()->SetAttribute ("Name", StringValue ("Packet delay (ms)"));
-      ulSeverApp.Get (0)->TraceConnectWithoutContext ("RxWithSeqTsSize",
-                                                      MakeBoundCallback (&RxPacketTraceForDelayNetSimulyzer,
-                                                                         ulRxDelay,
-                                                                         ulSeverApp.Get (0)->GetNode (),
-                                                                         remoteHostAddr));
-      ulSeverApp.Get (0)->TraceConnectWithoutContext ("RxWithSeqTsSize",
-                                                      MakeBoundCallback (&CdfTraceForDelayNetSimulyzer,
-                                                                         ulDelayEcdfInNet,
-                                                                         ulSeverApp.Get (0)->GetNode (),
-                                                                         remoteHostAddr));
-#endif
-
-      //UL bearer configuration
-      Ptr<EpcTft> tftUl = Create<EpcTft> ();
-      EpcTft::PacketFilter pfUl;
-      pfUl.remoteAddress = remoteHostAddr; //IMPORTANT!!!
-      pfUl.remotePortStart = ulPort;
-      pfUl.remotePortEnd = ulPort;
-      ++ulPort;
-      tftUl->Add (pfUl);
-      enum EpsBearer::Qci qUl;
-      qUl = EpsBearer::GBR_CONV_VOICE;
-      EpsBearer bearerUl (qUl);
-      nrHelper->ActivateDedicatedEpsBearer (inNetUeNetDev.Get (inIdx), bearerUl, tftUl);
+        nodeHelper.Set(
+            "Name",
+            StringValue("Remote UE - Node " + std::to_string(remoteUeNodes.Get(i)->GetId())));
+        nodeHelper.Install(remoteUeNodes.Get(i));
     }
 
-  //Remote UEs
-  std::cout << "Remote UEs traffic flows: " << std::endl;
-  for (uint32_t rmIdx = 0; rmIdx < remoteUeNodes.GetN (); ++rmIdx)
+    nodeHelper.Set("Model", netsimulyzer::models::CELL_TOWER_POLE_VALUE);
+    nodeHelper.Set("Height", netsimulyzer::OptionalValue<double>(10));
+    nodeHelper.Set("Offset", Vector3DValue(Vector3D(0, 0, -10)));
+    nodeHelper.Set("Name", StringValue("gNB"));
+    nodeHelper.Install(gNbNodes);
+
+    PointerValue xAxis;
+    PointerValue yAxis;
+    auto dlRxTputCollection = CreateObject<netsimulyzer::SeriesCollection>(orchestrator);
+    dlRxTputCollection->SetAttribute("Name", StringValue("Throughput - All UEs - DL - Rx"));
+    dlRxTputCollection->GetAttribute("XAxis", xAxis);
+    xAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name", StringValue("Time (s)"));
+    dlRxTputCollection->GetAttribute("YAxis", yAxis);
+    yAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name", StringValue("Throughput (kb/s)"));
+
+    auto ulRxTputCollection = CreateObject<netsimulyzer::SeriesCollection>(orchestrator);
+    ulRxTputCollection->SetAttribute("Name", StringValue("Throughput - All UEs - UL - Rx"));
+    ulRxTputCollection->GetAttribute("XAxis", xAxis);
+    xAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name", StringValue("Time (s)"));
+    ulRxTputCollection->GetAttribute("YAxis", yAxis);
+    yAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name", StringValue("Throughput (kb/s)"));
+
+    auto dlDelayEcdfInNet =
+        CreateObject<netsimulyzer::EcdfSink>(orchestrator, "Delay CDF - All InNet UEs - DL");
+    dlDelayEcdfInNet->GetXAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
+    dlDelayEcdfInNet->GetSeries()->SetAttribute("Color", GetNextColor());
+    auto dlDelayEcdfRelays =
+        CreateObject<netsimulyzer::EcdfSink>(orchestrator, "Delay CDF - All Relay UEs - DL");
+    dlDelayEcdfRelays->GetXAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
+    dlDelayEcdfRelays->GetSeries()->SetAttribute("Color", GetNextColor());
+    auto dlDelayEcdfRemotes =
+        CreateObject<netsimulyzer::EcdfSink>(orchestrator, "Delay CDF - All Remote UEs - DL");
+    dlDelayEcdfRemotes->GetXAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
+    dlDelayEcdfRelays->GetSeries()->SetAttribute("Color", GetNextColor());
+
+    auto ulDelayEcdfInNet =
+        CreateObject<netsimulyzer::EcdfSink>(orchestrator, "Delay CDF - All InNet UEs - UL");
+    ulDelayEcdfInNet->GetXAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
+    ulDelayEcdfInNet->GetSeries()->SetAttribute("Color", GetNextColor());
+    auto ulDelayEcdfRelays =
+        CreateObject<netsimulyzer::EcdfSink>(orchestrator, "Delay CDF - All Relay UEs - UL");
+    ulDelayEcdfRelays->GetXAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
+    ulDelayEcdfRelays->GetSeries()->SetAttribute("Color", GetNextColor());
+    auto ulDelayEcdfRemotes =
+        CreateObject<netsimulyzer::EcdfSink>(orchestrator, "Delay CDF - All Remote UEs - UL");
+    ulDelayEcdfRemotes->GetXAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
+    ulDelayEcdfRemotes->GetSeries()->SetAttribute("Color", GetNextColor());
+
+    auto dlDelayEcdfCollection = CreateObject<netsimulyzer::SeriesCollection>(orchestrator);
+    dlDelayEcdfCollection->SetAttribute("Name", StringValue("Delay CDF - All UEs - DL"));
+    dlDelayEcdfCollection->GetAttribute("XAxis", xAxis);
+    xAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name", StringValue("Packet delay (ms)"));
+    dlDelayEcdfCollection->GetAttribute("YAxis", yAxis);
+    yAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name", StringValue("Empirical CDF"));
+    dlDelayEcdfCollection->SetAttribute("HideAddedSeries", BooleanValue(false));
+    dlDelayEcdfCollection->Add(dlDelayEcdfInNet->GetSeries());
+    dlDelayEcdfCollection->Add(dlDelayEcdfRelays->GetSeries());
+    dlDelayEcdfCollection->Add(dlDelayEcdfRemotes->GetSeries());
+
+    auto ulDelayEcdfCollection = CreateObject<netsimulyzer::SeriesCollection>(orchestrator);
+    ulDelayEcdfCollection->SetAttribute("Name", StringValue("Delay CDF - All UEs - UL"));
+    ulDelayEcdfCollection->GetAttribute("XAxis", xAxis);
+    xAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name", StringValue("Packet delay (ms)"));
+    ulDelayEcdfCollection->GetAttribute("YAxis", yAxis);
+    yAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name", StringValue("Empirical CDF"));
+    ulDelayEcdfCollection->SetAttribute("HideAddedSeries", BooleanValue(false));
+    ulDelayEcdfCollection->Add(ulDelayEcdfInNet->GetSeries());
+    ulDelayEcdfCollection->Add(ulDelayEcdfRelays->GetSeries());
+    ulDelayEcdfCollection->Add(ulDelayEcdfRemotes->GetSeries());
+
+#endif
+
+    /************************ Application configuration ************************/
+    /* Client app: OnOff application configured to generate CBR traffic when in
+     *             On periods. Installed in the Remote Host (DL traffic) and in
+     *             the UEs (UL traffic)
+     * Server app: PacketSink application to consume the received traffic.
+     *             Installed in all end nodes (Remote Host and UEs)
+     */
+    uint16_t dlPort = 1000;
+    uint16_t ulPort = dlPort + 1000;
+    ApplicationContainer clientApps, serverApps;
+    // Random variable to randomize a bit start times of the client applications
+    // to avoid simulation artifacts of all the TX UEs transmitting at the same time.
+    Ptr<UniformRandomVariable> startTimeRnd = CreateObject<UniformRandomVariable>();
+    startTimeRnd->SetAttribute("Min", DoubleValue(0));
+    startTimeRnd->SetAttribute("Max", DoubleValue(2.0)); // seconds
+    std::string dataRateString = std::to_string(onOffDataRate) + "kb/s";
+
+    std::string onDistStr = "ns3::ConstantRandomVariable[Constant=3.0]";
+    std::string offDistStr = "ns3::ConstantRandomVariable[Constant=2.0]";
+
+    Config::SetDefault("ns3::OnOffApplication::EnableSeqTsSizeHeader", BooleanValue(true));
+    Config::SetDefault("ns3::PacketSink::EnableSeqTsSizeHeader", BooleanValue(true));
+
+    // InNetwork UEs
+    std::cout << "InNetwork UEs traffic flows: " << std::endl;
+    for (uint32_t inIdx = 0; inIdx < inNetUeNodes.GetN(); ++inIdx)
     {
-      //DL applications configuration
-      //-Client on Remote Host
-      OnOffHelper dlAppOnOffHelper ("ns3::UdpSocketFactory",
-                                    InetSocketAddress (remotesIpv4AddressVector [rmIdx], dlPort)); //Towards Remote UE rmIdx IP
-      dlAppOnOffHelper.SetConstantRate (DataRate (dataRateString), onOffPacketSize);
-      dlAppOnOffHelper.SetAttribute ("OnTime", StringValue (onDistStr));
-      dlAppOnOffHelper.SetAttribute ("OffTime", StringValue (offDistStr));
-      ApplicationContainer dlClientApp = dlAppOnOffHelper.Install (remoteHost); // Installed in Remote Host
-      Time dlAppStartTime = timeStartTraffic + Seconds (startTimeRnd->GetValue ());
-      dlClientApp.Start (dlAppStartTime);
-      clientApps.Add (dlClientApp);
-      std::cout << " DL: " << remoteHostAddr << " -> " << remotesIpv4AddressVector [rmIdx] <<
-        " start time: " << dlAppStartTime.GetSeconds ()  << " s, end time: " << simTime.GetSeconds () << " s" << std::endl;
+        // DL applications configuration
+        //-Client on Remote Host
+        OnOffHelper dlAppOnOffHelper(
+            "ns3::UdpSocketFactory",
+            InetSocketAddress(inNetIpv4AddressVector[inIdx], dlPort)); // Towards Remote UE rmIdx IP
+        dlAppOnOffHelper.SetConstantRate(DataRate(dataRateString), onOffPacketSize);
+        dlAppOnOffHelper.SetAttribute("OnTime", StringValue(onDistStr));
+        dlAppOnOffHelper.SetAttribute("OffTime", StringValue(offDistStr));
+        ApplicationContainer dlClientApp =
+            dlAppOnOffHelper.Install(remoteHost); // Installed in Remote Host
+        Time dlAppStartTime = timeStartTraffic + Seconds(startTimeRnd->GetValue());
+        dlClientApp.Start(dlAppStartTime);
+        clientApps.Add(dlClientApp);
+        std::cout << " DL: " << remoteHostAddr << " -> " << inNetIpv4AddressVector[inIdx]
+                  << " start time: " << dlAppStartTime.GetSeconds()
+                  << " s, end time: " << simTime.GetSeconds() << " s" << std::endl;
 
 #ifdef HAS_NETSIMULYZER
-      uint32_t nodeId = remoteUeNodes.Get (rmIdx)->GetId ();
+        uint32_t nodeId = inNetUeNodes.Get(inIdx)->GetId();
 
-      auto dlUeTputCollection = CreateObject<netsimulyzer::SeriesCollection> (orchestrator);
-      dlUeTputCollection->SetAttribute ("Name", StringValue ("Throughput - Remote UE - DL - Node " + std::to_string (nodeId)));
-      dlUeTputCollection->GetAttribute ("XAxis", xAxis);
-      xAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Time (s)"));
-      dlUeTputCollection->GetAttribute ("YAxis", yAxis);
-      yAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Throughput (kb/s)"));
-      auto dlTxTput = CreateObject<netsimulyzer::ThroughputSink> (orchestrator, "Throughput - Remote UE - Tx - DL - Node " + std::to_string (nodeId));
-      dlTxTput->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-      dlClientApp.Get (0)->TraceConnect ("TxWithSeqTsSize", "tx", MakeBoundCallback (&PacketTraceNetSimulyzer, dlTxTput));
-      dlUeTputCollection->Add (dlTxTput->GetSeries ());
+        auto dlUeTputCollection = CreateObject<netsimulyzer::SeriesCollection>(orchestrator);
+        dlUeTputCollection->SetAttribute(
+            "Name",
+            StringValue("Throughput - InNet UE - DL - Node " + std::to_string(nodeId)));
+        dlUeTputCollection->GetAttribute("XAxis", xAxis);
+        xAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name", StringValue("Time (s)"));
+        dlUeTputCollection->GetAttribute("YAxis", yAxis);
+        yAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name",
+                                                           StringValue("Throughput (kb/s)"));
+        auto dlTxTput = CreateObject<netsimulyzer::ThroughputSink>(orchestrator,
+                                                                   "InNet UE - Tx - DL - Node " +
+                                                                       std::to_string(nodeId));
+        dlTxTput->GetSeries()->SetAttribute("Color", GetNextColor());
+
+        dlClientApp.Get(0)->TraceConnect("TxWithSeqTsSize",
+                                         "tx",
+                                         MakeBoundCallback(&PacketTraceNetSimulyzer, dlTxTput));
+        dlUeTputCollection->Add(dlTxTput->GetSeries());
 #endif
 
-      //-Server on UE
-      PacketSinkHelper dlpacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), dlPort));
-      ApplicationContainer dlSeverApp = dlpacketSinkHelper.Install (remoteUeNodes.Get (rmIdx));
-      serverApps.Add (dlSeverApp);
+        //-Server on UE
+        PacketSinkHelper dlpacketSinkHelper("ns3::UdpSocketFactory",
+                                            InetSocketAddress(Ipv4Address::GetAny(), dlPort));
+        ApplicationContainer dlSeverApp = dlpacketSinkHelper.Install(inNetUeNodes.Get(inIdx));
+        serverApps.Add(dlSeverApp);
 
 #ifdef HAS_NETSIMULYZER
-      auto dlRxTput = CreateObject<netsimulyzer::ThroughputSink> (orchestrator, "Throughput - Remote UE - Rx - DL - Node " + std::to_string (nodeId));
-      dlRxTput->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-      dlSeverApp.Get (0)->TraceConnect ("RxWithSeqTsSize", "rx", MakeBoundCallback (&PacketTraceNetSimulyzer, dlRxTput));
-      dlUeTputCollection->Add (dlRxTput->GetSeries ());
-      dlRxTputCollection->Add (dlRxTput->GetSeries ());
+        auto dlRxTput = CreateObject<netsimulyzer::ThroughputSink>(
+            orchestrator,
+            "Throughput - InNet UE - Rx - DL - Node " + std::to_string(nodeId));
+        dlRxTput->GetSeries()->SetAttribute("Color", GetNextColor());
+        dlSeverApp.Get(0)->TraceConnect("RxWithSeqTsSize",
+                                        "rx",
+                                        MakeBoundCallback(&PacketTraceNetSimulyzer, dlRxTput));
+        dlUeTputCollection->Add(dlRxTput->GetSeries());
+        dlRxTputCollection->Add(dlRxTput->GetSeries());
 
-      auto dlRxDelay = CreateObject <netsimulyzer::XYSeries> (orchestrator);
-      dlRxDelay->SetAttribute ("Name", StringValue ("Delay - Remote UE - Rx - DL - Node " + std::to_string (nodeId)));
-      dlRxDelay->SetAttribute ("Color", GetNextColor ());
-      dlRxDelay->SetAttribute ("Connection", StringValue ("None"));
-      dlRxDelay->GetXAxis ()->SetAttribute ("Name", StringValue ("Time (s)"));
-      dlRxDelay->GetYAxis ()->SetAttribute ("Name", StringValue ("Packet delay (ms)"));
-      dlSeverApp.Get (0)->TraceConnectWithoutContext ("RxWithSeqTsSize",
-                                                      MakeBoundCallback (&RxPacketTraceForDelayNetSimulyzer,
-                                                                         dlRxDelay,
-                                                                         dlSeverApp.Get (0)->GetNode (),
-                                                                         remotesIpv4AddressVector [rmIdx]));
-      dlSeverApp.Get (0)->TraceConnectWithoutContext ("RxWithSeqTsSize",
-                                                      MakeBoundCallback (&CdfTraceForDelayNetSimulyzer,
-                                                                         dlDelayEcdfRemotes,
-                                                                         dlSeverApp.Get (0)->GetNode (),
-                                                                         remotesIpv4AddressVector [rmIdx]));
+        auto dlRxDelay = CreateObject<netsimulyzer::XYSeries>(orchestrator);
+        dlRxDelay->SetAttribute(
+            "Name",
+            StringValue("Delay - InNet UE - Rx - DL - Node " + std::to_string(nodeId)));
+        dlRxDelay->SetAttribute("Color", GetNextColor());
+        dlRxDelay->SetAttribute("Connection", StringValue("None"));
+        dlRxDelay->GetXAxis()->SetAttribute("Name", StringValue("Time (s)"));
+        dlRxDelay->GetYAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
+        dlSeverApp.Get(0)->TraceConnectWithoutContext(
+            "RxWithSeqTsSize",
+            MakeBoundCallback(&RxPacketTraceForDelayNetSimulyzer,
+                              dlRxDelay,
+                              dlSeverApp.Get(0)->GetNode(),
+                              inNetIpv4AddressVector[inIdx]));
+        dlSeverApp.Get(0)->TraceConnectWithoutContext(
+            "RxWithSeqTsSize",
+            MakeBoundCallback(&CdfTraceForDelayNetSimulyzer,
+                              dlDelayEcdfInNet,
+                              dlSeverApp.Get(0)->GetNode(),
+                              inNetIpv4AddressVector[inIdx]));
 #endif
 
-      //DL bearer configuration
-      Ptr<EpcTft> tftDl = Create<EpcTft> ();
-      EpcTft::PacketFilter pfDl;
-      pfDl.localPortStart = dlPort;
-      pfDl.localPortEnd = dlPort;
-      ++dlPort;
-      tftDl->Add (pfDl);
-      enum EpsBearer::Qci qDl;
-      qDl = EpsBearer::GBR_CONV_VOICE;
-      EpsBearer bearerDl (qDl);
-      nrHelper->ActivateDedicatedEpsBearer (remoteUeNetDev.Get (rmIdx), bearerDl, tftDl);
+        // DL bearer configuration
+        Ptr<EpcTft> tftDl = Create<EpcTft>();
+        EpcTft::PacketFilter pfDl;
+        pfDl.localPortStart = dlPort;
+        pfDl.localPortEnd = dlPort;
+        ++dlPort;
+        tftDl->Add(pfDl);
+        enum EpsBearer::Qci qDl;
+        qDl = EpsBearer::GBR_CONV_VOICE;
+        EpsBearer bearerDl(qDl);
+        nrHelper->ActivateDedicatedEpsBearer(inNetUeNetDev.Get(inIdx), bearerDl, tftDl);
 
-      //UL application configuration
-      //-Client on UE
-      OnOffHelper ulAppOnOffHelper ("ns3::UdpSocketFactory",
-                                    InetSocketAddress (remoteHostAddr, ulPort)); //Towards Remote Host
-      ulAppOnOffHelper.SetConstantRate (DataRate (dataRateString), onOffPacketSize);
-      ulAppOnOffHelper.SetAttribute ("OnTime", StringValue (onDistStr));
-      ulAppOnOffHelper.SetAttribute ("OffTime", StringValue (offDistStr));
-      ApplicationContainer ulClientApp = ulAppOnOffHelper.Install (remoteUeNodes.Get (rmIdx)); // Installed in Remote UE rmIdx
-      Time ulAppStartTime = timeStartTraffic + Seconds (startTimeRnd->GetValue ());
-      ulClientApp.Start (ulAppStartTime);
-      clientApps.Add (ulClientApp);
-      std::cout << " UL: " << remotesIpv4AddressVector [rmIdx] << " -> " << remoteHostAddr <<
-        " start time: " << ulAppStartTime.GetSeconds ()  << " s, end time: " << simTime.GetSeconds () << " s" << std::endl;
+        // UL application configuration
+        //-Client on UE
+        OnOffHelper ulAppOnOffHelper(
+            "ns3::UdpSocketFactory",
+            InetSocketAddress(remoteHostAddr, ulPort)); // Towards Remote Host
+        ulAppOnOffHelper.SetConstantRate(DataRate(dataRateString), onOffPacketSize);
+        ulAppOnOffHelper.SetAttribute("OnTime", StringValue(onDistStr));
+        ulAppOnOffHelper.SetAttribute("OffTime", StringValue(offDistStr));
+        ApplicationContainer ulClientApp =
+            ulAppOnOffHelper.Install(inNetUeNodes.Get(inIdx)); // Installed in Remote UE rmIdx
+        Time ulAppStartTime = timeStartTraffic + Seconds(startTimeRnd->GetValue());
+        ulClientApp.Start(ulAppStartTime);
+        clientApps.Add(ulClientApp);
+        std::cout << " UL: " << inNetIpv4AddressVector[inIdx] << " -> " << remoteHostAddr
+                  << " start time: " << ulAppStartTime.GetSeconds()
+                  << " s, end time: " << simTime.GetSeconds() << " s" << std::endl;
 
 #ifdef HAS_NETSIMULYZER
-      auto ulUeTputCollection = CreateObject<netsimulyzer::SeriesCollection> (orchestrator);
-      ulUeTputCollection->SetAttribute ("Name", StringValue ("Throughput - Remote UE - UL - Node " + std::to_string (nodeId)));
-      ulUeTputCollection->GetAttribute ("XAxis", xAxis);
-      xAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Time (s)"));
-      ulUeTputCollection->GetAttribute ("YAxis", yAxis);
-      yAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Throughput (kb/s)"));
+        auto ulUeTputCollection = CreateObject<netsimulyzer::SeriesCollection>(orchestrator);
+        ulUeTputCollection->SetAttribute(
+            "Name",
+            StringValue("Throughput - InNet UE - UL - Node " + std::to_string(nodeId)));
+        ulUeTputCollection->GetAttribute("XAxis", xAxis);
+        xAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name", StringValue("Time (s)"));
+        ulUeTputCollection->GetAttribute("YAxis", yAxis);
+        yAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name",
+                                                           StringValue("Throughput (kb/s)"));
 
-      auto ulTxTput = CreateObject<netsimulyzer::ThroughputSink> (orchestrator, "Throughput - Remote UE - Tx - UL - Node " + std::to_string (nodeId));
-      ulTxTput->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-      ulClientApp.Get (0)->TraceConnect ("TxWithSeqTsSize", "tx", MakeBoundCallback (&PacketTraceNetSimulyzer, ulTxTput));
-      ulUeTputCollection->Add (ulTxTput->GetSeries ());
+        auto ulTxTput = CreateObject<netsimulyzer::ThroughputSink>(
+            orchestrator,
+            "Throughput - InNet UE - Tx - UL - Node " + std::to_string(nodeId));
+        ulTxTput->GetSeries()->SetAttribute("Color", GetNextColor());
+        ulClientApp.Get(0)->TraceConnect("TxWithSeqTsSize",
+                                         "tx",
+                                         MakeBoundCallback(&PacketTraceNetSimulyzer, ulTxTput));
+        ulUeTputCollection->Add(ulTxTput->GetSeries());
 #endif
 
-      //-Server on Remote Host
-      PacketSinkHelper ulPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
-      ApplicationContainer ulSeverApp = ulPacketSinkHelper.Install (remoteHost);
-      serverApps.Add (ulSeverApp);
+        //-Server on Remtoe Host
+        PacketSinkHelper ulPacketSinkHelper("ns3::UdpSocketFactory",
+                                            InetSocketAddress(Ipv4Address::GetAny(), ulPort));
+        ApplicationContainer ulSeverApp = ulPacketSinkHelper.Install(remoteHost);
+        serverApps.Add(ulSeverApp);
 
 #ifdef HAS_NETSIMULYZER
-      auto ulRxTput = CreateObject<netsimulyzer::ThroughputSink> (orchestrator, "Throughput - Remote UE - Rx - UL - Node " + std::to_string (nodeId));
-      ulRxTput->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-      ulSeverApp.Get (0)->TraceConnect ("RxWithSeqTsSize", "rx", MakeBoundCallback (&PacketTraceNetSimulyzer, ulRxTput));
-      ulUeTputCollection->Add (ulRxTput->GetSeries ());
-      ulRxTputCollection->Add (ulRxTput->GetSeries ());
+        auto ulRxTput = CreateObject<netsimulyzer::ThroughputSink>(
+            orchestrator,
+            "Throughput - InNet UE - Rx - UL - Node " + std::to_string(nodeId));
+        ulRxTput->GetSeries()->SetAttribute("Color", GetNextColor());
+        ulSeverApp.Get(0)->TraceConnect("RxWithSeqTsSize",
+                                        "rx",
+                                        MakeBoundCallback(&PacketTraceNetSimulyzer, ulRxTput));
+        ulUeTputCollection->Add(ulRxTput->GetSeries());
+        ulRxTputCollection->Add(ulRxTput->GetSeries());
 
-      auto ulRxDelay = CreateObject <netsimulyzer::XYSeries> (orchestrator);
-      ulRxDelay->SetAttribute ("Name", StringValue ("Delay - Remote UE - Rx - UL - Node " + std::to_string (nodeId)));
-      ulRxDelay->SetAttribute ("Color", GetNextColor ());
-      ulRxDelay->SetAttribute ("Connection", StringValue ("None"));
-      ulRxDelay->GetXAxis ()->SetAttribute ("Name", StringValue ("Time (s)"));
-      ulRxDelay->GetYAxis ()->SetAttribute ("Name", StringValue ("Packet delay (ms)"));
-      ulSeverApp.Get (0)->TraceConnectWithoutContext ("RxWithSeqTsSize",
-                                                      MakeBoundCallback (&RxPacketTraceForDelayNetSimulyzer,
-                                                                         ulRxDelay,
-                                                                         ulSeverApp.Get (0)->GetNode (),
-                                                                         remoteHostAddr));
-      ulSeverApp.Get (0)->TraceConnectWithoutContext ("RxWithSeqTsSize",
-                                                      MakeBoundCallback (&CdfTraceForDelayNetSimulyzer,
-                                                                         ulDelayEcdfRemotes,
-                                                                         ulSeverApp.Get (0)->GetNode (),
-                                                                         remoteHostAddr));
+        auto ulRxDelay = CreateObject<netsimulyzer::XYSeries>(orchestrator);
+        ulRxDelay->SetAttribute(
+            "Name",
+            StringValue("Delay - InNet UE - Rx - UL - Node " + std::to_string(nodeId)));
+        ulRxDelay->SetAttribute("Color", GetNextColor());
+        ulRxDelay->SetAttribute("Connection", StringValue("None"));
+        ulRxDelay->GetXAxis()->SetAttribute("Name", StringValue("Time (s)"));
+        ulRxDelay->GetYAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
+        ulSeverApp.Get(0)->TraceConnectWithoutContext(
+            "RxWithSeqTsSize",
+            MakeBoundCallback(&RxPacketTraceForDelayNetSimulyzer,
+                              ulRxDelay,
+                              ulSeverApp.Get(0)->GetNode(),
+                              remoteHostAddr));
+        ulSeverApp.Get(0)->TraceConnectWithoutContext(
+            "RxWithSeqTsSize",
+            MakeBoundCallback(&CdfTraceForDelayNetSimulyzer,
+                              ulDelayEcdfInNet,
+                              ulSeverApp.Get(0)->GetNode(),
+                              remoteHostAddr));
 #endif
 
-      //UL bearer configuration
-      Ptr<EpcTft> tftUl = Create<EpcTft> ();
-      EpcTft::PacketFilter pfUl;
-      pfUl.remoteAddress = remoteHostAddr; //IMPORTANT!!!
-      pfUl.remotePortStart = ulPort;
-      pfUl.remotePortEnd = ulPort;
-      ++ulPort;
-      tftUl->Add (pfUl);
-      enum EpsBearer::Qci qUl;
-      qUl = EpsBearer::GBR_CONV_VOICE;
-      EpsBearer bearerUl (qUl);
-      nrHelper->ActivateDedicatedEpsBearer (remoteUeNetDev.Get (rmIdx), bearerUl, tftUl);
+        // UL bearer configuration
+        Ptr<EpcTft> tftUl = Create<EpcTft>();
+        EpcTft::PacketFilter pfUl;
+        pfUl.remoteAddress = remoteHostAddr; // IMPORTANT!!!
+        pfUl.remotePortStart = ulPort;
+        pfUl.remotePortEnd = ulPort;
+        ++ulPort;
+        tftUl->Add(pfUl);
+        enum EpsBearer::Qci qUl;
+        qUl = EpsBearer::GBR_CONV_VOICE;
+        EpsBearer bearerUl(qUl);
+        nrHelper->ActivateDedicatedEpsBearer(inNetUeNetDev.Get(inIdx), bearerUl, tftUl);
     }
 
-  //Relay UEs
-  if (relayUesTraffic)
+    // Remote UEs
+    std::cout << "Remote UEs traffic flows: " << std::endl;
+    for (uint32_t rmIdx = 0; rmIdx < remoteUeNodes.GetN(); ++rmIdx)
     {
-      std::cout << "Relay UEs traffic flows: " << std::endl;
-      for (uint32_t ryIdx = 0; ryIdx < relayUeNodes.GetN (); ++ryIdx)
+        // DL applications configuration
+        //-Client on Remote Host
+        OnOffHelper dlAppOnOffHelper("ns3::UdpSocketFactory",
+                                     InetSocketAddress(remotesIpv4AddressVector[rmIdx],
+                                                       dlPort)); // Towards Remote UE rmIdx IP
+        dlAppOnOffHelper.SetConstantRate(DataRate(dataRateString), onOffPacketSize);
+        dlAppOnOffHelper.SetAttribute("OnTime", StringValue(onDistStr));
+        dlAppOnOffHelper.SetAttribute("OffTime", StringValue(offDistStr));
+        ApplicationContainer dlClientApp =
+            dlAppOnOffHelper.Install(remoteHost); // Installed in Remote Host
+        Time dlAppStartTime = timeStartTraffic + Seconds(startTimeRnd->GetValue());
+        dlClientApp.Start(dlAppStartTime);
+        clientApps.Add(dlClientApp);
+        std::cout << " DL: " << remoteHostAddr << " -> " << remotesIpv4AddressVector[rmIdx]
+                  << " start time: " << dlAppStartTime.GetSeconds()
+                  << " s, end time: " << simTime.GetSeconds() << " s" << std::endl;
+
+#ifdef HAS_NETSIMULYZER
+        uint32_t nodeId = remoteUeNodes.Get(rmIdx)->GetId();
+
+        auto dlUeTputCollection = CreateObject<netsimulyzer::SeriesCollection>(orchestrator);
+        dlUeTputCollection->SetAttribute(
+            "Name",
+            StringValue("Throughput - Remote UE - DL - Node " + std::to_string(nodeId)));
+        dlUeTputCollection->GetAttribute("XAxis", xAxis);
+        xAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name", StringValue("Time (s)"));
+        dlUeTputCollection->GetAttribute("YAxis", yAxis);
+        yAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name",
+                                                           StringValue("Throughput (kb/s)"));
+        auto dlTxTput = CreateObject<netsimulyzer::ThroughputSink>(
+            orchestrator,
+            "Throughput - Remote UE - Tx - DL - Node " + std::to_string(nodeId));
+        dlTxTput->GetSeries()->SetAttribute("Color", GetNextColor());
+        dlClientApp.Get(0)->TraceConnect("TxWithSeqTsSize",
+                                         "tx",
+                                         MakeBoundCallback(&PacketTraceNetSimulyzer, dlTxTput));
+        dlUeTputCollection->Add(dlTxTput->GetSeries());
+#endif
+
+        //-Server on UE
+        PacketSinkHelper dlpacketSinkHelper("ns3::UdpSocketFactory",
+                                            InetSocketAddress(Ipv4Address::GetAny(), dlPort));
+        ApplicationContainer dlSeverApp = dlpacketSinkHelper.Install(remoteUeNodes.Get(rmIdx));
+        serverApps.Add(dlSeverApp);
+
+#ifdef HAS_NETSIMULYZER
+        auto dlRxTput = CreateObject<netsimulyzer::ThroughputSink>(
+            orchestrator,
+            "Throughput - Remote UE - Rx - DL - Node " + std::to_string(nodeId));
+        dlRxTput->GetSeries()->SetAttribute("Color", GetNextColor());
+        dlSeverApp.Get(0)->TraceConnect("RxWithSeqTsSize",
+                                        "rx",
+                                        MakeBoundCallback(&PacketTraceNetSimulyzer, dlRxTput));
+        dlUeTputCollection->Add(dlRxTput->GetSeries());
+        dlRxTputCollection->Add(dlRxTput->GetSeries());
+
+        auto dlRxDelay = CreateObject<netsimulyzer::XYSeries>(orchestrator);
+        dlRxDelay->SetAttribute(
+            "Name",
+            StringValue("Delay - Remote UE - Rx - DL - Node " + std::to_string(nodeId)));
+        dlRxDelay->SetAttribute("Color", GetNextColor());
+        dlRxDelay->SetAttribute("Connection", StringValue("None"));
+        dlRxDelay->GetXAxis()->SetAttribute("Name", StringValue("Time (s)"));
+        dlRxDelay->GetYAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
+        dlSeverApp.Get(0)->TraceConnectWithoutContext(
+            "RxWithSeqTsSize",
+            MakeBoundCallback(&RxPacketTraceForDelayNetSimulyzer,
+                              dlRxDelay,
+                              dlSeverApp.Get(0)->GetNode(),
+                              remotesIpv4AddressVector[rmIdx]));
+        dlSeverApp.Get(0)->TraceConnectWithoutContext(
+            "RxWithSeqTsSize",
+            MakeBoundCallback(&CdfTraceForDelayNetSimulyzer,
+                              dlDelayEcdfRemotes,
+                              dlSeverApp.Get(0)->GetNode(),
+                              remotesIpv4AddressVector[rmIdx]));
+#endif
+
+        // DL bearer configuration
+        Ptr<EpcTft> tftDl = Create<EpcTft>();
+        EpcTft::PacketFilter pfDl;
+        pfDl.localPortStart = dlPort;
+        pfDl.localPortEnd = dlPort;
+        ++dlPort;
+        tftDl->Add(pfDl);
+        enum EpsBearer::Qci qDl;
+        qDl = EpsBearer::GBR_CONV_VOICE;
+        EpsBearer bearerDl(qDl);
+        nrHelper->ActivateDedicatedEpsBearer(remoteUeNetDev.Get(rmIdx), bearerDl, tftDl);
+
+        // UL application configuration
+        //-Client on UE
+        OnOffHelper ulAppOnOffHelper(
+            "ns3::UdpSocketFactory",
+            InetSocketAddress(remoteHostAddr, ulPort)); // Towards Remote Host
+        ulAppOnOffHelper.SetConstantRate(DataRate(dataRateString), onOffPacketSize);
+        ulAppOnOffHelper.SetAttribute("OnTime", StringValue(onDistStr));
+        ulAppOnOffHelper.SetAttribute("OffTime", StringValue(offDistStr));
+        ApplicationContainer ulClientApp =
+            ulAppOnOffHelper.Install(remoteUeNodes.Get(rmIdx)); // Installed in Remote UE rmIdx
+        Time ulAppStartTime = timeStartTraffic + Seconds(startTimeRnd->GetValue());
+        ulClientApp.Start(ulAppStartTime);
+        clientApps.Add(ulClientApp);
+        std::cout << " UL: " << remotesIpv4AddressVector[rmIdx] << " -> " << remoteHostAddr
+                  << " start time: " << ulAppStartTime.GetSeconds()
+                  << " s, end time: " << simTime.GetSeconds() << " s" << std::endl;
+
+#ifdef HAS_NETSIMULYZER
+        auto ulUeTputCollection = CreateObject<netsimulyzer::SeriesCollection>(orchestrator);
+        ulUeTputCollection->SetAttribute(
+            "Name",
+            StringValue("Throughput - Remote UE - UL - Node " + std::to_string(nodeId)));
+        ulUeTputCollection->GetAttribute("XAxis", xAxis);
+        xAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name", StringValue("Time (s)"));
+        ulUeTputCollection->GetAttribute("YAxis", yAxis);
+        yAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name",
+                                                           StringValue("Throughput (kb/s)"));
+
+        auto ulTxTput = CreateObject<netsimulyzer::ThroughputSink>(
+            orchestrator,
+            "Throughput - Remote UE - Tx - UL - Node " + std::to_string(nodeId));
+        ulTxTput->GetSeries()->SetAttribute("Color", GetNextColor());
+        ulClientApp.Get(0)->TraceConnect("TxWithSeqTsSize",
+                                         "tx",
+                                         MakeBoundCallback(&PacketTraceNetSimulyzer, ulTxTput));
+        ulUeTputCollection->Add(ulTxTput->GetSeries());
+#endif
+
+        //-Server on Remote Host
+        PacketSinkHelper ulPacketSinkHelper("ns3::UdpSocketFactory",
+                                            InetSocketAddress(Ipv4Address::GetAny(), ulPort));
+        ApplicationContainer ulSeverApp = ulPacketSinkHelper.Install(remoteHost);
+        serverApps.Add(ulSeverApp);
+
+#ifdef HAS_NETSIMULYZER
+        auto ulRxTput = CreateObject<netsimulyzer::ThroughputSink>(
+            orchestrator,
+            "Throughput - Remote UE - Rx - UL - Node " + std::to_string(nodeId));
+        ulRxTput->GetSeries()->SetAttribute("Color", GetNextColor());
+        ulSeverApp.Get(0)->TraceConnect("RxWithSeqTsSize",
+                                        "rx",
+                                        MakeBoundCallback(&PacketTraceNetSimulyzer, ulRxTput));
+        ulUeTputCollection->Add(ulRxTput->GetSeries());
+        ulRxTputCollection->Add(ulRxTput->GetSeries());
+
+        auto ulRxDelay = CreateObject<netsimulyzer::XYSeries>(orchestrator);
+        ulRxDelay->SetAttribute(
+            "Name",
+            StringValue("Delay - Remote UE - Rx - UL - Node " + std::to_string(nodeId)));
+        ulRxDelay->SetAttribute("Color", GetNextColor());
+        ulRxDelay->SetAttribute("Connection", StringValue("None"));
+        ulRxDelay->GetXAxis()->SetAttribute("Name", StringValue("Time (s)"));
+        ulRxDelay->GetYAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
+        ulSeverApp.Get(0)->TraceConnectWithoutContext(
+            "RxWithSeqTsSize",
+            MakeBoundCallback(&RxPacketTraceForDelayNetSimulyzer,
+                              ulRxDelay,
+                              ulSeverApp.Get(0)->GetNode(),
+                              remoteHostAddr));
+        ulSeverApp.Get(0)->TraceConnectWithoutContext(
+            "RxWithSeqTsSize",
+            MakeBoundCallback(&CdfTraceForDelayNetSimulyzer,
+                              ulDelayEcdfRemotes,
+                              ulSeverApp.Get(0)->GetNode(),
+                              remoteHostAddr));
+#endif
+
+        // UL bearer configuration
+        Ptr<EpcTft> tftUl = Create<EpcTft>();
+        EpcTft::PacketFilter pfUl;
+        pfUl.remoteAddress = remoteHostAddr; // IMPORTANT!!!
+        pfUl.remotePortStart = ulPort;
+        pfUl.remotePortEnd = ulPort;
+        ++ulPort;
+        tftUl->Add(pfUl);
+        enum EpsBearer::Qci qUl;
+        qUl = EpsBearer::GBR_CONV_VOICE;
+        EpsBearer bearerUl(qUl);
+        nrHelper->ActivateDedicatedEpsBearer(remoteUeNetDev.Get(rmIdx), bearerUl, tftUl);
+    }
+
+    // Relay UEs
+    if (relayUesTraffic)
+    {
+        std::cout << "Relay UEs traffic flows: " << std::endl;
+        for (uint32_t ryIdx = 0; ryIdx < relayUeNodes.GetN(); ++ryIdx)
         {
-          //DL applications configuration
-          //-Client on Remote Host
-          OnOffHelper dlAppOnOffHelper ("ns3::UdpSocketFactory",
-                                        InetSocketAddress (relaysIpv4AddressVector [ryIdx], dlPort)); //Towards Remote UE rmIdx IP
-          dlAppOnOffHelper.SetConstantRate (DataRate (dataRateString), onOffPacketSize);
-          dlAppOnOffHelper.SetAttribute ("OnTime", StringValue (onDistStr));
-          dlAppOnOffHelper.SetAttribute ("OffTime", StringValue (offDistStr));
-          ApplicationContainer dlClientApp = dlAppOnOffHelper.Install (remoteHost); // Installed in Remote Host
-          Time dlAppStartTime = timeStartTraffic + Seconds (startTimeRnd->GetValue ());
-          dlClientApp.Start (dlAppStartTime);
-          clientApps.Add (dlClientApp);
-          std::cout << " DL: " << remoteHostAddr << " -> " << relaysIpv4AddressVector [ryIdx] <<
-            " start time: " << dlAppStartTime.GetSeconds ()  << " s, end time: " << simTime.GetSeconds () << " s" << std::endl;
+            // DL applications configuration
+            //-Client on Remote Host
+            OnOffHelper dlAppOnOffHelper("ns3::UdpSocketFactory",
+                                         InetSocketAddress(relaysIpv4AddressVector[ryIdx],
+                                                           dlPort)); // Towards Remote UE rmIdx IP
+            dlAppOnOffHelper.SetConstantRate(DataRate(dataRateString), onOffPacketSize);
+            dlAppOnOffHelper.SetAttribute("OnTime", StringValue(onDistStr));
+            dlAppOnOffHelper.SetAttribute("OffTime", StringValue(offDistStr));
+            ApplicationContainer dlClientApp =
+                dlAppOnOffHelper.Install(remoteHost); // Installed in Remote Host
+            Time dlAppStartTime = timeStartTraffic + Seconds(startTimeRnd->GetValue());
+            dlClientApp.Start(dlAppStartTime);
+            clientApps.Add(dlClientApp);
+            std::cout << " DL: " << remoteHostAddr << " -> " << relaysIpv4AddressVector[ryIdx]
+                      << " start time: " << dlAppStartTime.GetSeconds()
+                      << " s, end time: " << simTime.GetSeconds() << " s" << std::endl;
 
 #ifdef HAS_NETSIMULYZER
-          uint32_t nodeId = relayUeNodes.Get (ryIdx)->GetId ();
+            uint32_t nodeId = relayUeNodes.Get(ryIdx)->GetId();
 
-          auto dlUeTputCollection = CreateObject<netsimulyzer::SeriesCollection> (orchestrator);
-          dlUeTputCollection->SetAttribute ("Name", StringValue ("Throughput - Relay UE - DL - Node " + std::to_string (nodeId)));
-          dlUeTputCollection->GetAttribute ("XAxis", xAxis);
-          xAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Time (s)"));
-          dlUeTputCollection->GetAttribute ("YAxis", yAxis);
-          yAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Throughput (kb/s)"));
-          auto dlTxTput = CreateObject<netsimulyzer::ThroughputSink> (orchestrator, "Throughput - Relay UE - Tx - DL - Node " + std::to_string (nodeId));
-          dlTxTput->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-          dlClientApp.Get (0)->TraceConnect ("TxWithSeqTsSize", "tx", MakeBoundCallback (&PacketTraceNetSimulyzer, dlTxTput));
-          dlUeTputCollection->Add (dlTxTput->GetSeries ());
+            auto dlUeTputCollection = CreateObject<netsimulyzer::SeriesCollection>(orchestrator);
+            dlUeTputCollection->SetAttribute(
+                "Name",
+                StringValue("Throughput - Relay UE - DL - Node " + std::to_string(nodeId)));
+            dlUeTputCollection->GetAttribute("XAxis", xAxis);
+            xAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name", StringValue("Time (s)"));
+            dlUeTputCollection->GetAttribute("YAxis", yAxis);
+            yAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name",
+                                                               StringValue("Throughput (kb/s)"));
+            auto dlTxTput = CreateObject<netsimulyzer::ThroughputSink>(
+                orchestrator,
+                "Throughput - Relay UE - Tx - DL - Node " + std::to_string(nodeId));
+            dlTxTput->GetSeries()->SetAttribute("Color", GetNextColor());
+            dlClientApp.Get(0)->TraceConnect("TxWithSeqTsSize",
+                                             "tx",
+                                             MakeBoundCallback(&PacketTraceNetSimulyzer, dlTxTput));
+            dlUeTputCollection->Add(dlTxTput->GetSeries());
 #endif
 
-          //-Server in UE
-          PacketSinkHelper dlpacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), dlPort));
-          ApplicationContainer dlSeverApp = dlpacketSinkHelper.Install (relayUeNodes.Get (ryIdx));
-          serverApps.Add (dlSeverApp);
+            //-Server in UE
+            PacketSinkHelper dlpacketSinkHelper("ns3::UdpSocketFactory",
+                                                InetSocketAddress(Ipv4Address::GetAny(), dlPort));
+            ApplicationContainer dlSeverApp = dlpacketSinkHelper.Install(relayUeNodes.Get(ryIdx));
+            serverApps.Add(dlSeverApp);
 
 #ifdef HAS_NETSIMULYZER
-          auto dlRxTput = CreateObject<netsimulyzer::ThroughputSink> (orchestrator, "Throughput - Relay UE - Rx - DL - Node " + std::to_string (nodeId));
-          dlRxTput->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-          dlSeverApp.Get (0)->TraceConnect ("RxWithSeqTsSize", "rx", MakeBoundCallback (&PacketTraceNetSimulyzer, dlRxTput));
-          dlUeTputCollection->Add (dlRxTput->GetSeries ());
-          dlRxTputCollection->Add (dlRxTput->GetSeries ());
+            auto dlRxTput = CreateObject<netsimulyzer::ThroughputSink>(
+                orchestrator,
+                "Throughput - Relay UE - Rx - DL - Node " + std::to_string(nodeId));
+            dlRxTput->GetSeries()->SetAttribute("Color", GetNextColor());
+            dlSeverApp.Get(0)->TraceConnect("RxWithSeqTsSize",
+                                            "rx",
+                                            MakeBoundCallback(&PacketTraceNetSimulyzer, dlRxTput));
+            dlUeTputCollection->Add(dlRxTput->GetSeries());
+            dlRxTputCollection->Add(dlRxTput->GetSeries());
 
-          auto dlRxDelay = CreateObject <netsimulyzer::XYSeries> (orchestrator);
-          dlRxDelay->SetAttribute ("Name", StringValue ("Delay - Relay UE - Rx - DL - Node " + std::to_string (nodeId)));
-          dlRxDelay->SetAttribute ("Color", GetNextColor ());
-          dlRxDelay->SetAttribute ("Connection", StringValue ("None"));
-          dlRxDelay->GetXAxis ()->SetAttribute ("Name", StringValue ("Time (s)"));
-          dlRxDelay->GetYAxis ()->SetAttribute ("Name", StringValue ("Packet delay (ms)"));
-          dlSeverApp.Get (0)->TraceConnectWithoutContext ("RxWithSeqTsSize",
-                                                          MakeBoundCallback (&RxPacketTraceForDelayNetSimulyzer,
-                                                                             dlRxDelay,
-                                                                             dlSeverApp.Get (0)->GetNode (),
-                                                                             relaysIpv4AddressVector [ryIdx]));
-          dlSeverApp.Get (0)->TraceConnectWithoutContext ("RxWithSeqTsSize",
-                                                          MakeBoundCallback (&CdfTraceForDelayNetSimulyzer,
-                                                                             dlDelayEcdfRelays,
-                                                                             dlSeverApp.Get (0)->GetNode (),
-                                                                             relaysIpv4AddressVector [ryIdx]));
+            auto dlRxDelay = CreateObject<netsimulyzer::XYSeries>(orchestrator);
+            dlRxDelay->SetAttribute(
+                "Name",
+                StringValue("Delay - Relay UE - Rx - DL - Node " + std::to_string(nodeId)));
+            dlRxDelay->SetAttribute("Color", GetNextColor());
+            dlRxDelay->SetAttribute("Connection", StringValue("None"));
+            dlRxDelay->GetXAxis()->SetAttribute("Name", StringValue("Time (s)"));
+            dlRxDelay->GetYAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
+            dlSeverApp.Get(0)->TraceConnectWithoutContext(
+                "RxWithSeqTsSize",
+                MakeBoundCallback(&RxPacketTraceForDelayNetSimulyzer,
+                                  dlRxDelay,
+                                  dlSeverApp.Get(0)->GetNode(),
+                                  relaysIpv4AddressVector[ryIdx]));
+            dlSeverApp.Get(0)->TraceConnectWithoutContext(
+                "RxWithSeqTsSize",
+                MakeBoundCallback(&CdfTraceForDelayNetSimulyzer,
+                                  dlDelayEcdfRelays,
+                                  dlSeverApp.Get(0)->GetNode(),
+                                  relaysIpv4AddressVector[ryIdx]));
 #endif
 
-          //DL bearer configuration
-          Ptr<EpcTft> tftDl = Create<EpcTft> ();
-          EpcTft::PacketFilter pfDl;
-          pfDl.localPortStart = dlPort;
-          pfDl.localPortEnd = dlPort;
-          ++dlPort;
-          tftDl->Add (pfDl);
-          enum EpsBearer::Qci qDl;
-          qDl = EpsBearer::GBR_CONV_VOICE;
-          EpsBearer bearerDl (qDl);
-          nrHelper->ActivateDedicatedEpsBearer (relayUeNetDev.Get (ryIdx), bearerDl, tftDl);
+            // DL bearer configuration
+            Ptr<EpcTft> tftDl = Create<EpcTft>();
+            EpcTft::PacketFilter pfDl;
+            pfDl.localPortStart = dlPort;
+            pfDl.localPortEnd = dlPort;
+            ++dlPort;
+            tftDl->Add(pfDl);
+            enum EpsBearer::Qci qDl;
+            qDl = EpsBearer::GBR_CONV_VOICE;
+            EpsBearer bearerDl(qDl);
+            nrHelper->ActivateDedicatedEpsBearer(relayUeNetDev.Get(ryIdx), bearerDl, tftDl);
 
-          //UL application configuration
-          OnOffHelper ulAppOnOffHelper ("ns3::UdpSocketFactory",
-                                        InetSocketAddress (remoteHostAddr, ulPort)); //Towards Remote Host
-          ulAppOnOffHelper.SetConstantRate (DataRate (dataRateString), onOffPacketSize);
-          ulAppOnOffHelper.SetAttribute ("OnTime", StringValue (onDistStr));
-          ulAppOnOffHelper.SetAttribute ("OffTime", StringValue (offDistStr));
-          ApplicationContainer ulClientApp = ulAppOnOffHelper.Install (relayUeNodes.Get (ryIdx)); // Installed in Remote UE rmIdx
-          Time ulAppStartTime = timeStartTraffic + Seconds (startTimeRnd->GetValue ());
-          ulClientApp.Start (ulAppStartTime);
-          clientApps.Add (ulClientApp);
-          std::cout << " UL: " << relaysIpv4AddressVector [ryIdx] << " -> " << remoteHostAddr  <<
-            " start time: " << ulAppStartTime.GetSeconds ()  << " s, end time: " << simTime.GetSeconds () << " s" << std::endl;
+            // UL application configuration
+            OnOffHelper ulAppOnOffHelper(
+                "ns3::UdpSocketFactory",
+                InetSocketAddress(remoteHostAddr, ulPort)); // Towards Remote Host
+            ulAppOnOffHelper.SetConstantRate(DataRate(dataRateString), onOffPacketSize);
+            ulAppOnOffHelper.SetAttribute("OnTime", StringValue(onDistStr));
+            ulAppOnOffHelper.SetAttribute("OffTime", StringValue(offDistStr));
+            ApplicationContainer ulClientApp =
+                ulAppOnOffHelper.Install(relayUeNodes.Get(ryIdx)); // Installed in Remote UE rmIdx
+            Time ulAppStartTime = timeStartTraffic + Seconds(startTimeRnd->GetValue());
+            ulClientApp.Start(ulAppStartTime);
+            clientApps.Add(ulClientApp);
+            std::cout << " UL: " << relaysIpv4AddressVector[ryIdx] << " -> " << remoteHostAddr
+                      << " start time: " << ulAppStartTime.GetSeconds()
+                      << " s, end time: " << simTime.GetSeconds() << " s" << std::endl;
 
 #ifdef HAS_NETSIMULYZER
-          auto ulUeTputCollection = CreateObject<netsimulyzer::SeriesCollection> (orchestrator);
-          ulUeTputCollection->SetAttribute ("Name", StringValue ("Throughput - Relay UE - UL - Node " + std::to_string (nodeId)));
-          ulUeTputCollection->GetAttribute ("XAxis", xAxis);
-          xAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Time (s)"));
-          ulUeTputCollection->GetAttribute ("YAxis", yAxis);
-          yAxis.Get<netsimulyzer::ValueAxis> ()->SetAttribute ("Name", StringValue ("Throughput (kb/s)"));
-          auto ulTxTput = CreateObject<netsimulyzer::ThroughputSink> (orchestrator, "Throughput - Relay UE - Tx - UL - Node " + std::to_string (nodeId));
-          ulTxTput->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-          ulClientApp.Get (0)->TraceConnect ("TxWithSeqTsSize", "tx", MakeBoundCallback (&PacketTraceNetSimulyzer, ulTxTput));
-          ulUeTputCollection->Add (ulTxTput->GetSeries ());
+            auto ulUeTputCollection = CreateObject<netsimulyzer::SeriesCollection>(orchestrator);
+            ulUeTputCollection->SetAttribute(
+                "Name",
+                StringValue("Throughput - Relay UE - UL - Node " + std::to_string(nodeId)));
+            ulUeTputCollection->GetAttribute("XAxis", xAxis);
+            xAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name", StringValue("Time (s)"));
+            ulUeTputCollection->GetAttribute("YAxis", yAxis);
+            yAxis.Get<netsimulyzer::ValueAxis>()->SetAttribute("Name",
+                                                               StringValue("Throughput (kb/s)"));
+            auto ulTxTput = CreateObject<netsimulyzer::ThroughputSink>(
+                orchestrator,
+                "Throughput - Relay UE - Tx - UL - Node " + std::to_string(nodeId));
+            ulTxTput->GetSeries()->SetAttribute("Color", GetNextColor());
+            ulClientApp.Get(0)->TraceConnect("TxWithSeqTsSize",
+                                             "tx",
+                                             MakeBoundCallback(&PacketTraceNetSimulyzer, ulTxTput));
+            ulUeTputCollection->Add(ulTxTput->GetSeries());
 #endif
 
-
-          PacketSinkHelper ulPacketSinkHelper ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), ulPort));
-          ApplicationContainer ulSeverApp = ulPacketSinkHelper.Install (remoteHost);
-          serverApps.Add (ulSeverApp);
+            PacketSinkHelper ulPacketSinkHelper("ns3::UdpSocketFactory",
+                                                InetSocketAddress(Ipv4Address::GetAny(), ulPort));
+            ApplicationContainer ulSeverApp = ulPacketSinkHelper.Install(remoteHost);
+            serverApps.Add(ulSeverApp);
 
 #ifdef HAS_NETSIMULYZER
-          auto ulRxTput = CreateObject<netsimulyzer::ThroughputSink> (orchestrator, "Throughput - Relay UE - Rx - UL - Node " + std::to_string (nodeId));
-          ulRxTput->GetSeries ()->SetAttribute ("Color", GetNextColor ());
-          ulSeverApp.Get (0)->TraceConnect ("RxWithSeqTsSize", "rx", MakeBoundCallback (&PacketTraceNetSimulyzer, ulRxTput));
-          ulUeTputCollection->Add (ulRxTput->GetSeries ());
-          ulRxTputCollection->Add (ulRxTput->GetSeries ());
+            auto ulRxTput = CreateObject<netsimulyzer::ThroughputSink>(
+                orchestrator,
+                "Throughput - Relay UE - Rx - UL - Node " + std::to_string(nodeId));
+            ulRxTput->GetSeries()->SetAttribute("Color", GetNextColor());
+            ulSeverApp.Get(0)->TraceConnect("RxWithSeqTsSize",
+                                            "rx",
+                                            MakeBoundCallback(&PacketTraceNetSimulyzer, ulRxTput));
+            ulUeTputCollection->Add(ulRxTput->GetSeries());
+            ulRxTputCollection->Add(ulRxTput->GetSeries());
 
-          auto ulRxDelay = CreateObject <netsimulyzer::XYSeries> (orchestrator);
-          ulRxDelay->SetAttribute ("Name", StringValue ("Delay - Relay UE - Rx - UL - Node " + std::to_string (nodeId)));
-          ulRxDelay->SetAttribute ("Color", GetNextColor ());
-          ulRxDelay->SetAttribute ("Connection", StringValue ("None"));
-          ulRxDelay->GetXAxis ()->SetAttribute ("Name", StringValue ("Time (s)"));
-          ulRxDelay->GetYAxis ()->SetAttribute ("Name", StringValue ("Packet delay (ms)"));
-          ulSeverApp.Get (0)->TraceConnectWithoutContext ("RxWithSeqTsSize",
-                                                          MakeBoundCallback (&RxPacketTraceForDelayNetSimulyzer,
-                                                                             ulRxDelay,
-                                                                             ulSeverApp.Get (0)->GetNode (),
-                                                                             remoteHostAddr));
-          ulSeverApp.Get (0)->TraceConnectWithoutContext ("RxWithSeqTsSize",
-                                                          MakeBoundCallback (&CdfTraceForDelayNetSimulyzer,
-                                                                             ulDelayEcdfRelays,
-                                                                             ulSeverApp.Get (0)->GetNode (),
-                                                                             remoteHostAddr));
+            auto ulRxDelay = CreateObject<netsimulyzer::XYSeries>(orchestrator);
+            ulRxDelay->SetAttribute(
+                "Name",
+                StringValue("Delay - Relay UE - Rx - UL - Node " + std::to_string(nodeId)));
+            ulRxDelay->SetAttribute("Color", GetNextColor());
+            ulRxDelay->SetAttribute("Connection", StringValue("None"));
+            ulRxDelay->GetXAxis()->SetAttribute("Name", StringValue("Time (s)"));
+            ulRxDelay->GetYAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
+            ulSeverApp.Get(0)->TraceConnectWithoutContext(
+                "RxWithSeqTsSize",
+                MakeBoundCallback(&RxPacketTraceForDelayNetSimulyzer,
+                                  ulRxDelay,
+                                  ulSeverApp.Get(0)->GetNode(),
+                                  remoteHostAddr));
+            ulSeverApp.Get(0)->TraceConnectWithoutContext(
+                "RxWithSeqTsSize",
+                MakeBoundCallback(&CdfTraceForDelayNetSimulyzer,
+                                  ulDelayEcdfRelays,
+                                  ulSeverApp.Get(0)->GetNode(),
+                                  remoteHostAddr));
 #endif
 
-          //UL bearer configuration
-          Ptr<EpcTft> tftUl = Create<EpcTft> ();
-          EpcTft::PacketFilter pfUl;
-          pfUl.remoteAddress = remoteHostAddr; //IMPORTANT!!!
-          pfUl.remotePortStart = ulPort;
-          pfUl.remotePortEnd = ulPort;
-          ++ulPort;
-          tftUl->Add (pfUl);
-          enum EpsBearer::Qci qUl;
-          qUl = EpsBearer::GBR_CONV_VOICE;
-          EpsBearer bearerUl (qUl);
-          nrHelper->ActivateDedicatedEpsBearer (relayUeNetDev.Get (ryIdx), bearerUl, tftUl);
+            // UL bearer configuration
+            Ptr<EpcTft> tftUl = Create<EpcTft>();
+            EpcTft::PacketFilter pfUl;
+            pfUl.remoteAddress = remoteHostAddr; // IMPORTANT!!!
+            pfUl.remotePortStart = ulPort;
+            pfUl.remotePortEnd = ulPort;
+            ++ulPort;
+            tftUl->Add(pfUl);
+            enum EpsBearer::Qci qUl;
+            qUl = EpsBearer::GBR_CONV_VOICE;
+            EpsBearer bearerUl(qUl);
+            nrHelper->ActivateDedicatedEpsBearer(relayUeNetDev.Get(ryIdx), bearerUl, tftUl);
         }
     }
 
-  clientApps.Stop (simTime);
-  serverApps.Start (Seconds (1.0));
-  serverApps.Stop (simTime);
-  /******************** End Application configuration ************************/
+    clientApps.Stop(simTime);
+    serverApps.Start(Seconds(1.0));
+    serverApps.Stop(simTime);
+    /******************** End Application configuration ************************/
 
-  /************ SL traces database setup *************************************/
-  SQLiteOutput db (outputDir + exampleName + "-SlTraces.db");
+    /************ SL traces database setup *************************************/
+    SQLiteOutput db(outputDir + exampleName + "-SlTraces.db");
 
-  UeMacPscchTxOutputStats pscchStats;
-  pscchStats.SetDb (&db, "pscchTxUeMac");
-  Config::ConnectWithoutContext ("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUeMac/SlPscchScheduling",
-                                 MakeBoundCallback (&NotifySlPscchScheduling, &pscchStats));
+    UeMacPscchTxOutputStats pscchStats;
+    pscchStats.SetDb(&db, "pscchTxUeMac");
+    Config::ConnectWithoutContext("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/"
+                                  "ComponentCarrierMapUe/*/NrUeMac/SlPscchScheduling",
+                                  MakeBoundCallback(&NotifySlPscchScheduling, &pscchStats));
 
-  UeMacPsschTxOutputStats psschStats;
-  psschStats.SetDb (&db, "psschTxUeMac");
-  Config::ConnectWithoutContext ("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUeMac/SlPsschScheduling",
-                                 MakeBoundCallback (&NotifySlPsschScheduling, &psschStats));
+    UeMacPsschTxOutputStats psschStats;
+    psschStats.SetDb(&db, "psschTxUeMac");
+    Config::ConnectWithoutContext("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/"
+                                  "ComponentCarrierMapUe/*/NrUeMac/SlPsschScheduling",
+                                  MakeBoundCallback(&NotifySlPsschScheduling, &psschStats));
 
-  UePhyPscchRxOutputStats pscchPhyStats;
-  pscchPhyStats.SetDb (&db, "pscchRxUePhy");
-  Config::ConnectWithoutContext ("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/NrSpectrumPhyList/*/RxPscchTraceUe",
-                                 MakeBoundCallback (&NotifySlPscchRx, &pscchPhyStats));
+    UePhyPscchRxOutputStats pscchPhyStats;
+    pscchPhyStats.SetDb(&db, "pscchRxUePhy");
+    Config::ConnectWithoutContext(
+        "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/"
+        "SpectrumPhy/RxPscchTraceUe",
+        MakeBoundCallback(&NotifySlPscchRx, &pscchPhyStats));
 
-  UePhyPsschRxOutputStats psschPhyStats;
-  psschPhyStats.SetDb (&db, "psschRxUePhy");
-  Config::ConnectWithoutContext ("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/NrSpectrumPhyList/*/RxPsschTraceUe",
-                                 MakeBoundCallback (&NotifySlPsschRx, &psschPhyStats));
-  UeRlcRxOutputStats ueRlcRxStats;
-  ueRlcRxStats.SetDb (&db, "rlcRx");
-  Config::ConnectWithoutContext ("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUeMac/RxRlcPduWithTxRnti",
-                                 MakeBoundCallback (&NotifySlRlcPduRx, &ueRlcRxStats));
+    UePhyPsschRxOutputStats psschPhyStats;
+    psschPhyStats.SetDb(&db, "psschRxUePhy");
+    Config::ConnectWithoutContext(
+        "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/"
+        "SpectrumPhy/RxPsschTraceUe",
+        MakeBoundCallback(&NotifySlPsschRx, &psschPhyStats));
+    UeRlcRxOutputStats ueRlcRxStats;
+    ueRlcRxStats.SetDb(&db, "rlcRx");
+    Config::ConnectWithoutContext("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/"
+                                  "ComponentCarrierMapUe/*/NrUeMac/RxRlcPduWithTxRnti",
+                                  MakeBoundCallback(&NotifySlRlcPduRx, &ueRlcRxStats));
 
-  UeToUePktTxRxOutputStats pktStats;
-  pktStats.SetDb (&db, "pktTxRx");
+    UeToUePktTxRxOutputStats pktStats;
+    pktStats.SetDb(&db, "pktTxRx");
 
-  for (uint16_t ac = 0; ac < clientApps.GetN (); ac++)
+    for (uint16_t ac = 0; ac < clientApps.GetN(); ac++)
     {
-      Ipv4Address localAddrs =  clientApps.Get (ac)->GetNode ()->GetObject<Ipv4L3Protocol> ()->GetAddress (1,0).GetLocal ();
-      clientApps.Get (ac)->TraceConnect ("TxWithSeqTsSize", "tx", MakeBoundCallback (&PacketTraceDb, &pktStats, clientApps.Get (ac)->GetNode (), localAddrs));
+        Ipv4Address localAddrs =
+            clientApps.Get(ac)->GetNode()->GetObject<Ipv4L3Protocol>()->GetAddress(1, 0).GetLocal();
+        clientApps.Get(ac)->TraceConnect("TxWithSeqTsSize",
+                                         "tx",
+                                         MakeBoundCallback(&PacketTraceDb,
+                                                           &pktStats,
+                                                           clientApps.Get(ac)->GetNode(),
+                                                           localAddrs));
     }
 
-  for (uint16_t ac = 0; ac < serverApps.GetN (); ac++)
+    for (uint16_t ac = 0; ac < serverApps.GetN(); ac++)
     {
-      Ipv4Address localAddrs =  serverApps.Get (ac)->GetNode ()->GetObject<Ipv4L3Protocol> ()->GetAddress (1,0).GetLocal ();
-      serverApps.Get (ac)->TraceConnect ("RxWithSeqTsSize", "rx", MakeBoundCallback (&PacketTraceDb, &pktStats, serverApps.Get (ac)->GetNode (), localAddrs));
+        Ipv4Address localAddrs =
+            serverApps.Get(ac)->GetNode()->GetObject<Ipv4L3Protocol>()->GetAddress(1, 0).GetLocal();
+        serverApps.Get(ac)->TraceConnect("RxWithSeqTsSize",
+                                         "rx",
+                                         MakeBoundCallback(&PacketTraceDb,
+                                                           &pktStats,
+                                                           serverApps.Get(ac)->GetNode(),
+                                                           localAddrs));
     }
-  /************ END SL traces database setup *************************************/
+    /************ END SL traces database setup *************************************/
 
+    /******************* Application packet delay tracing ********************************/
+    AsciiTraceHelper ascii;
+    Ptr<OutputStreamWrapper> PacketTraceForDelayStream =
+        ascii.CreateFileStream("NrSlAppRxPacketDelayTrace.txt");
+    *PacketTraceForDelayStream->GetStream()
+        << "time(s)\trxNodeId\tsrcIp\tdstIp\tseqNum\tdelay(ms)" << std::endl;
 
-  /******************* Application packet delay tracing ********************************/
-  AsciiTraceHelper ascii;
-  Ptr<OutputStreamWrapper> PacketTraceForDelayStream = ascii.CreateFileStream ("NrSlAppRxPacketDelayTrace.txt");
-  *PacketTraceForDelayStream->GetStream () << "time(s)\trxNodeId\tsrcIp\tdstIp\tseqNum\tdelay(ms)" << std::endl;
-
-  for (uint16_t ac = 0; ac < clientApps.GetN (); ac++)
+    for (uint16_t ac = 0; ac < clientApps.GetN(); ac++)
     {
-      Ipv4Address localAddrs =  clientApps.Get (ac)->GetNode ()->GetObject<Ipv4L3Protocol> ()->GetAddress (1,0).GetLocal ();
-      clientApps.Get (ac)->TraceConnectWithoutContext ("TxWithSeqTsSize", MakeBoundCallback (&TxPacketTraceForDelay, localAddrs));
+        Ipv4Address localAddrs =
+            clientApps.Get(ac)->GetNode()->GetObject<Ipv4L3Protocol>()->GetAddress(1, 0).GetLocal();
+        clientApps.Get(ac)->TraceConnectWithoutContext(
+            "TxWithSeqTsSize",
+            MakeBoundCallback(&TxPacketTraceForDelay, localAddrs));
     }
-  for (uint16_t ac = 0; ac < serverApps.GetN (); ac++)
+    for (uint16_t ac = 0; ac < serverApps.GetN(); ac++)
     {
-      Ipv4Address localAddrs =  serverApps.Get (ac)->GetNode ()->GetObject<Ipv4L3Protocol> ()->GetAddress (1,0).GetLocal ();
-      serverApps.Get (ac)->TraceConnectWithoutContext ("RxWithSeqTsSize", MakeBoundCallback (&RxPacketTraceForDelay, PacketTraceForDelayStream, serverApps.Get (ac)->GetNode (), localAddrs));
+        Ipv4Address localAddrs =
+            serverApps.Get(ac)->GetNode()->GetObject<Ipv4L3Protocol>()->GetAddress(1, 0).GetLocal();
+        serverApps.Get(ac)->TraceConnectWithoutContext(
+            "RxWithSeqTsSize",
+            MakeBoundCallback(&RxPacketTraceForDelay,
+                              PacketTraceForDelayStream,
+                              serverApps.Get(ac)->GetNode(),
+                              localAddrs));
     }
-  /******************* END Application packet delay tracing ****************************/
+    /******************* END Application packet delay tracing ****************************/
 
-  /******************* PC5-S messages tracing ********************************/
+    /******************* PC5-S messages tracing ********************************/
 
-  Ptr<OutputStreamWrapper> Pc5SignallingPacketTraceStream = ascii.CreateFileStream ("NrSlPc5SignallingPacketTrace.txt");
-  *Pc5SignallingPacketTraceStream->GetStream () << "time(s)\tnodeId\tTX/RX\tsrcL2Id\tdstL2Id\tmsgType" << std::endl;
-  for (uint32_t i = 0; i < remoteUeNetDev.GetN (); ++i)
+    Ptr<OutputStreamWrapper> Pc5SignallingPacketTraceStream =
+        ascii.CreateFileStream("NrSlPc5SignallingPacketTrace.txt");
+    *Pc5SignallingPacketTraceStream->GetStream()
+        << "time(s)\tnodeId\tTX/RX\tsrcL2Id\tdstL2Id\tmsgType" << std::endl;
+    for (uint32_t i = 0; i < remoteUeNetDev.GetN(); ++i)
     {
-      Ptr<NrSlUeProse> prose = remoteUeNetDev.Get (i)->GetObject<NrUeNetDevice> ()->GetSlUeService ()->GetObject <NrSlUeProse> ();
-      prose->TraceConnectWithoutContext ("PC5SignallingPacketTrace",
-                                         MakeBoundCallback (&TraceSinkPC5SignallingPacketTrace,
+        Ptr<NrSlUeProse> prose = remoteUeNetDev.Get(i)->GetObject<NrSlUeProse>();
+        prose->TraceConnectWithoutContext("PC5SignallingPacketTrace",
+                                          MakeBoundCallback(&TraceSinkPC5SignallingPacketTrace,
                                                             Pc5SignallingPacketTraceStream,
-                                                            remoteUeNetDev.Get (i)->GetNode ()));
+                                                            remoteUeNetDev.Get(i)->GetNode()));
     }
-  for (uint32_t i = 0; i < relayUeNetDev.GetN (); ++i)
+    for (uint32_t i = 0; i < relayUeNetDev.GetN(); ++i)
     {
-      Ptr<NrSlUeProse> prose = relayUeNetDev.Get (i)->GetObject<NrUeNetDevice> ()->GetSlUeService ()->GetObject <NrSlUeProse> ();
-      prose->TraceConnectWithoutContext ("PC5SignallingPacketTrace",
-                                         MakeBoundCallback (&TraceSinkPC5SignallingPacketTrace,
+        Ptr<NrSlUeProse> prose = relayUeNetDev.Get(i)->GetObject<NrSlUeProse>();
+        prose->TraceConnectWithoutContext("PC5SignallingPacketTrace",
+                                          MakeBoundCallback(&TraceSinkPC5SignallingPacketTrace,
                                                             Pc5SignallingPacketTraceStream,
-                                                            relayUeNetDev.Get (i)->GetNode ()));
+                                                            relayUeNetDev.Get(i)->GetNode()));
     }
-  /******************* END PC5-S messages tracing **************************/
+    /******************* END PC5-S messages tracing **************************/
 
-  /******************* Received messages by the relay tracing **************/
+    /******************* Received messages by the relay tracing **************/
 
-  Ptr<OutputStreamWrapper> RelayNasRxPacketTraceStream = ascii.CreateFileStream ("NrSlRelayNasRxPacketTrace.txt");
-  *RelayNasRxPacketTraceStream->GetStream () << "time(s)\tnodeId\tnodeIp\tsrcIp\tdstIp\tsrcLink\tdstLink" << std::endl;
-  for (uint32_t i = 0; i < relayUeNetDev.GetN (); ++i)
+    Ptr<OutputStreamWrapper> RelayNasRxPacketTraceStream =
+        ascii.CreateFileStream("NrSlRelayNasRxPacketTrace.txt");
+    *RelayNasRxPacketTraceStream->GetStream()
+        << "time(s)\tnodeId\tnodeIp\tsrcIp\tdstIp\tsrcLink\tdstLink" << std::endl;
+    for (uint32_t i = 0; i < relayUeNetDev.GetN(); ++i)
     {
-      Ptr<EpcUeNas> epcUeNas = relayUeNetDev.Get (i)->GetObject<NrUeNetDevice> ()->GetNas ();
+        Ptr<EpcUeNas> epcUeNas = relayUeNetDev.Get(i)->GetObject<NrUeNetDevice>()->GetNas();
 
-      epcUeNas->TraceConnectWithoutContext ("NrSlRelayRxPacketTrace",
-                                            MakeBoundCallback (&TraceSinkRelayNasRxPacketTrace,
+        epcUeNas->TraceConnectWithoutContext("NrSlRelayRxPacketTrace",
+                                             MakeBoundCallback(&TraceSinkRelayNasRxPacketTrace,
                                                                RelayNasRxPacketTraceStream,
-                                                               relayUeNetDev.Get (i)->GetNode ()));
+                                                               relayUeNetDev.Get(i)->GetNode()));
     }
-  /*************** END Received messages by the relay tracing **************/
+    /*************** END Received messages by the relay tracing **************/
 
-  //Configure FlowMonitor to get traffic flow statistics
-  FlowMonitorHelper flowmonHelper;
-  NodeContainer endpointNodes;
-  endpointNodes.Add (remoteHost);
-  endpointNodes.Add (inNetUeNodes);
-  endpointNodes.Add (remoteUeNodes);
-  endpointNodes.Add (relayUeNodes);
+    // Configure FlowMonitor to get traffic flow statistics
+    FlowMonitorHelper flowmonHelper;
+    NodeContainer endpointNodes;
+    endpointNodes.Add(remoteHost);
+    endpointNodes.Add(inNetUeNodes);
+    endpointNodes.Add(remoteUeNodes);
+    endpointNodes.Add(relayUeNodes);
 
-  Ptr<ns3::FlowMonitor> monitor = flowmonHelper.Install (endpointNodes);
-  monitor->SetAttribute ("DelayBinWidth", DoubleValue (0.001));
-  monitor->SetAttribute ("JitterBinWidth", DoubleValue (0.001));
-  monitor->SetAttribute ("PacketSizeBinWidth", DoubleValue (20));
+    Ptr<ns3::FlowMonitor> monitor = flowmonHelper.Install(endpointNodes);
+    monitor->SetAttribute("DelayBinWidth", DoubleValue(0.001));
+    monitor->SetAttribute("JitterBinWidth", DoubleValue(0.001));
+    monitor->SetAttribute("PacketSizeBinWidth", DoubleValue(20));
 
-  //Run simulation
-  Simulator::Stop (simTime);
-  Simulator::Run ();
+    // Run simulation
+    Simulator::Stop(simTime);
+    Simulator::Run();
 
-  //SL database dump
-  pktStats.EmptyCache ();
-  pscchStats.EmptyCache ();
-  psschStats.EmptyCache ();
-  pscchPhyStats.EmptyCache ();
-  psschPhyStats.EmptyCache ();
-  ueRlcRxStats.EmptyCache ();
+    // SL database dump
+    pktStats.EmptyCache();
+    pscchStats.EmptyCache();
+    psschStats.EmptyCache();
+    pscchPhyStats.EmptyCache();
+    psschPhyStats.EmptyCache();
+    ueRlcRxStats.EmptyCache();
 
-  //Print per-flow statistics
-  monitor->CheckForLostPackets ();
-  Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier> (flowmonHelper.GetClassifier ());
-  FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats ();
+    // Print per-flow statistics
+    monitor->CheckForLostPackets();
+    Ptr<Ipv4FlowClassifier> classifier =
+        DynamicCast<Ipv4FlowClassifier>(flowmonHelper.GetClassifier());
+    FlowMonitor::FlowStatsContainer stats = monitor->GetFlowStats();
 
-  std::ofstream outFile;
-  std::string filename = outputDir + "/" + exampleName  + "-flowMonitorOutput.txt";
-  outFile.open (filename.c_str (), std::ofstream::out | std::ofstream::trunc);
-  if (!outFile.is_open ())
+    std::ofstream outFile;
+    std::string filename = outputDir + "/" + exampleName + "-flowMonitorOutput.txt";
+    outFile.open(filename.c_str(), std::ofstream::out | std::ofstream::trunc);
+    if (!outFile.is_open())
     {
-      std::cerr << "Can't open file " << filename << std::endl;
-      return 1;
+        std::cerr << "Can't open file " << filename << std::endl;
+        return 1;
     }
 
-  outFile.setf (std::ios_base::fixed);
+    outFile.setf(std::ios_base::fixed);
 
-  for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin (); i != stats.end (); ++i)
+    for (std::map<FlowId, FlowMonitor::FlowStats>::const_iterator i = stats.begin();
+         i != stats.end();
+         ++i)
     {
-      Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (i->first);
-      std::stringstream protoStream;
-      protoStream << (uint16_t) t.protocol;
-      if (t.protocol == 6)
+        Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow(i->first);
+        std::stringstream protoStream;
+        protoStream << (uint16_t)t.protocol;
+        if (t.protocol == 6)
         {
-          protoStream.str ("TCP");
+            protoStream.str("TCP");
         }
-      if (t.protocol == 17)
+        if (t.protocol == 17)
         {
-          protoStream.str ("UDP");
+            protoStream.str("UDP");
         }
 
-      double appDuration = 0;
+        double appDuration = 0;
 
-      appDuration = simTime.GetSeconds () - timeStartTraffic.GetSeconds (); //Some inaccuracy is expected due to randomization of start time.
+        appDuration =
+            simTime.GetSeconds() -
+            timeStartTraffic
+                .GetSeconds(); // Some inaccuracy is expected due to randomization of start time.
 
-      outFile << "  Flow " << i->first << " (" << t.sourceAddress << " -> " << t.destinationAddress << ") " << protoStream.str () << "\n";
-      outFile << "    Tx Packets: " << i->second.txPackets << "\n";
-      outFile << "    Tx Bytes:   " << i->second.txBytes << "\n";
-      outFile << "    TxOffered:  " << i->second.txBytes * 8.0 / appDuration / 1000 / 1000  << " Mbps\n";
-      outFile << "    Rx Packets: " << i->second.rxPackets << "\n";
-      outFile << "    Rx Bytes:   " << i->second.rxBytes << "\n";
-      if (i->second.rxPackets > 0)
+        outFile << "  Flow " << i->first << " (" << t.sourceAddress << " -> "
+                << t.destinationAddress << ") " << protoStream.str() << "\n";
+        outFile << "    Tx Packets: " << i->second.txPackets << "\n";
+        outFile << "    Tx Bytes:   " << i->second.txBytes << "\n";
+        outFile << "    TxOffered:  " << i->second.txBytes * 8.0 / appDuration / 1000 / 1000
+                << " Mbps\n";
+        outFile << "    Rx Packets: " << i->second.rxPackets << "\n";
+        outFile << "    Rx Bytes:   " << i->second.rxBytes << "\n";
+        if (i->second.rxPackets > 0)
         {
-          outFile << "    Throughput: " << i->second.rxBytes * 8.0 / appDuration / 1000 / 1000  << " Mbps\n";
-          outFile << "    Mean delay:  " << 1000 * i->second.delaySum.GetSeconds () / i->second.rxPackets << " ms\n";
-          outFile << "    Mean jitter:  " << 1000 * i->second.jitterSum.GetSeconds () / i->second.rxPackets  << " ms\n";
+            outFile << "    Throughput: " << i->second.rxBytes * 8.0 / appDuration / 1000 / 1000
+                    << " Mbps\n";
+            outFile << "    Mean delay:  "
+                    << 1000 * i->second.delaySum.GetSeconds() / i->second.rxPackets << " ms\n";
+            outFile << "    Mean jitter:  "
+                    << 1000 * i->second.jitterSum.GetSeconds() / i->second.rxPackets << " ms\n";
         }
-      else
+        else
         {
-          outFile << "    Throughput:  0 Mbps\n";
-          outFile << "    Mean delay:  0 ms\n";
-          outFile << "    Mean jitter: 0 ms\n";
+            outFile << "    Throughput:  0 Mbps\n";
+            outFile << "    Mean delay:  0 ms\n";
+            outFile << "    Mean jitter: 0 ms\n";
         }
     }
-  outFile.close ();
+    outFile.close();
 
-  std::cout << "Simulation done!"  << std::endl << "Traffic flows statistics: " << std::endl;
-  std::ifstream f (filename.c_str ());
-  if (f.is_open ())
+    std::cout << "Simulation done!" << std::endl << "Traffic flows statistics: " << std::endl;
+    std::ifstream f(filename.c_str());
+    if (f.is_open())
     {
-      std::cout << f.rdbuf ();
+        std::cout << f.rdbuf();
     }
-  f.close ();
-  std::cout << "Number of packets relayed by the L3 UE-to-Network relays:"  << std::endl;
-  std::cout << "relayIp      srcIp->dstIp      srcLink->dstLink\t\tnPackets"  << std::endl;
-  for (auto it = g_relayNasPacketCounter.begin (); it != g_relayNasPacketCounter.end (); ++it)
+    f.close();
+    std::cout << "Number of packets relayed by the L3 UE-to-Network relays:" << std::endl;
+    std::cout << "relayIp      srcIp->dstIp      srcLink->dstLink\t\tnPackets" << std::endl;
+    for (auto it = g_relayNasPacketCounter.begin(); it != g_relayNasPacketCounter.end(); ++it)
     {
-      std::cout << it->first << "\t\t" << it->second << std::endl;
+        std::cout << it->first << "\t\t" << it->second << std::endl;
     }
 
-  Simulator::Destroy ();
-  return 0;
+    Simulator::Destroy();
+    return 0;
 }
-
-
