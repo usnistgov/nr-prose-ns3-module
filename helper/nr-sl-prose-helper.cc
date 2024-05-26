@@ -126,7 +126,7 @@ NrSlProseHelper::PrepareSingleUeForProse (Ptr<NrUeNetDevice> nrUeDev)
   epcUeNas->SetNrSlUeSvcNasSapUser (nrSlUeProse->GetNrSlUeSvcNasSapUser ());
 
   //Keep the ProSe layer accessible in the net device
-  nrUeDev->SetAttribute ("NrSlService", PointerValue (nrSlUeProse));
+  nrUeDev->AggregateObject(nrSlUeProse);
 
 }
 
@@ -147,7 +147,7 @@ NrSlProseHelper::PrepareSingleUeForUnicast (Ptr<NrUeNetDevice> nrUeDev)
 {
   NS_LOG_FUNCTION (this);
 
-  Ptr<NrSlUeProse> nrSlUeProse = nrUeDev->GetSlUeService ()->GetObject <NrSlUeProse> ();
+  Ptr<NrSlUeProse> nrSlUeProse = nrUeDev->GetObject <NrSlUeProse> ();
   nrSlUeProse->ConfigureUnicast ();
 }
 
@@ -159,8 +159,8 @@ NrSlProseHelper::EstablishRealDirectLink (Time time,
   NS_LOG_FUNCTION (this);
   Ptr<NrUeNetDevice> initUeNetDev = initUe->GetObject <NrUeNetDevice>();
   Ptr<NrUeNetDevice> trgtUeNetDev = trgtUe->GetObject <NrUeNetDevice>();
-  Ptr<NrSlUeProse> initUeProse = initUeNetDev->GetSlUeService ()->GetObject <NrSlUeProse> ();
-  Ptr<NrSlUeProse> trgtUeProse = trgtUeNetDev->GetSlUeService ()->GetObject <NrSlUeProse> ();
+  Ptr<NrSlUeProse> initUeProse = initUeNetDev->GetObject <NrSlUeProse> ();
+  Ptr<NrSlUeProse> trgtUeProse = trgtUeNetDev->GetObject <NrSlUeProse> ();
   Ptr<LteUeRrc> initUeRrc = initUeNetDev->GetRrc ();
   Ptr<LteUeRrc> trgtUeRrc = trgtUeNetDev->GetRrc ();
 
@@ -202,8 +202,8 @@ NrSlProseHelper::EstablishL3UeToNetworkRelayConnection (Time t,
   }
   Ptr<NrUeNetDevice> remoteUeNetDev = remoteUe->GetObject <NrUeNetDevice>();
   Ptr<NrUeNetDevice> relayUeNetDev = relayUe->GetObject <NrUeNetDevice>();
-  Ptr<NrSlUeProse> remoteUeProse = remoteUeNetDev->GetSlUeService ()->GetObject <NrSlUeProse> ();
-  Ptr<NrSlUeProse> relayUeProse = relayUeNetDev->GetSlUeService ()->GetObject <NrSlUeProse> ();
+  Ptr<NrSlUeProse> remoteUeProse = remoteUeNetDev->GetObject <NrSlUeProse> ();
+  Ptr<NrSlUeProse> relayUeProse = relayUeNetDev->GetObject <NrSlUeProse> ();
   Ptr<LteUeRrc> remoteUeRrc = remoteUeNetDev->GetRrc ();
   Ptr<LteUeRrc> relayUeRrc = relayUeNetDev->GetRrc ();
 
@@ -241,12 +241,12 @@ NrSlProseHelper::ConfigureL3UeToNetworkRelay (const NetDeviceContainer relayUeDe
                                               EpsBearer bearer, Ptr<EpcTft> tft)
 {
   NS_LOG_FUNCTION (this);
-  NS_ASSERT_MSG (m_epcHelper != 0, "dedicated EPS bearers cannot be set up when the EPC is not used");
+  NS_ASSERT_MSG (m_epcHelper, "dedicated EPS bearers cannot be set up when the EPC is not used");
 
   for (NetDeviceContainer::Iterator devIt = relayUeDevices.Begin (); devIt != relayUeDevices.End (); ++devIt)
     {
       uint64_t imsi = (*devIt)->GetObject<NrUeNetDevice> ()->GetImsi ();
-      Ptr<NrSlUeProse> prose = (*devIt)->GetObject<NrUeNetDevice> ()->GetSlUeService ()->GetObject <NrSlUeProse> ();
+      Ptr<NrSlUeProse> prose = (*devIt)->GetObject<NrUeNetDevice> ()->GetObject <NrSlUeProse> ();
 
       //Set the relay service codes of the services the relay UE provides and the associated configuration
       for ( auto it = relayServiceCodes.begin (); it != relayServiceCodes.end (); ++it )
@@ -268,7 +268,7 @@ NrSlProseHelper::StartDiscoveryApp (Ptr<NetDevice> ueDevice, uint32_t appCode, u
 {
   NS_LOG_FUNCTION (this);
 
-  Ptr<NrSlUeProse> ueProse = ueDevice->GetObject <NrUeNetDevice>()->GetSlUeService ()->GetObject <NrSlUeProse> ();
+  Ptr<NrSlUeProse> ueProse = ueDevice->GetObject <NrUeNetDevice>()->GetObject <NrSlUeProse> ();
   ueProse->SetL2Id (ueDevice->GetObject <NrUeNetDevice>()->GetRrc ()->GetSourceL2Id ());
   ueProse->SetImsi (ueDevice->GetObject <NrUeNetDevice>()->GetRrc ()->GetImsi ());
   ueProse->AddDiscoveryApp (appCode, dstL2Id, role);
@@ -279,7 +279,7 @@ NrSlProseHelper::StopDiscoveryApp (Ptr<NetDevice> ueDevice, uint32_t appCode, Nr
 {
   NS_LOG_FUNCTION (this);
 
-  Ptr<NrSlUeProse> ueProse = ueDevice->GetObject <NrUeNetDevice>()->GetSlUeService ()->GetObject <NrSlUeProse> ();
+  Ptr<NrSlUeProse> ueProse = ueDevice->GetObject <NrUeNetDevice>()->GetObject <NrSlUeProse> ();
   ueProse->RemoveDiscoveryApp (appCode, role);
 }
 
@@ -312,7 +312,7 @@ void
 NrSlProseHelper::StartRelayDiscovery (Ptr<NetDevice> ueDevice, uint32_t relayCode, uint32_t dstL2Id, NrSlUeProse::DiscoveryModel model, NrSlUeProse::DiscoveryRole role)
 {
   NS_LOG_FUNCTION (this);
-  Ptr<NrSlUeProse> ueProse = ueDevice->GetObject <NrUeNetDevice>()->GetSlUeService ()->GetObject <NrSlUeProse> ();
+  Ptr<NrSlUeProse> ueProse = ueDevice->GetObject <NrUeNetDevice>()->GetObject <NrSlUeProse> ();
   Ptr<LteUeRrc> ueRrc = ueDevice->GetObject <NrUeNetDevice>()->GetRrc ();
   uint32_t srcL2Id = ueRrc->GetSourceL2Id ();
   ueProse->SetL2Id (srcL2Id);
@@ -325,7 +325,7 @@ void
 NrSlProseHelper::StopRelayDiscovery (Ptr<NetDevice> ueDevice, uint32_t relayCode, NrSlUeProse::DiscoveryRole role)
 {
   NS_LOG_FUNCTION (this);
-  Ptr<NrSlUeProse> ueProse = ueDevice->GetObject <NrUeNetDevice>()->GetSlUeService ()->GetObject <NrSlUeProse> ();
+  Ptr<NrSlUeProse> ueProse = ueDevice->GetObject <NrUeNetDevice>()->GetObject <NrSlUeProse> ();
   ueProse->RemoveRelayDiscovery (relayCode, role);
 }
 
@@ -333,7 +333,7 @@ void
 NrSlProseHelper::EnableDiscoveryTraces (void)
 {
   NS_LOG_FUNCTION_NOARGS ();
-  Config::Connect ("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/NrSlService/$ns3::NrSlUeProse/DiscoveryTrace", MakeBoundCallback (&NrSlDiscoveryTrace::DiscoveryTraceCallback, m_discoveryTrace));
+  Config::Connect ("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/$ns3::NrSlUeProse/DiscoveryTrace", MakeBoundCallback (&NrSlDiscoveryTrace::DiscoveryTraceCallback, m_discoveryTrace));
 }
 
 
@@ -368,7 +368,7 @@ NrSlProseHelper::StartRemoteRelayConnection (const NetDeviceContainer remoteDevi
  //Define relay selection algorithm and enable RSRP measurements for remote UEs
   for (uint32_t i = 0; i < remoteDevices.GetN (); ++i)
     {
-      Ptr<NrSlUeProse> remoteProse = remoteDevices.Get(i)->GetObject <NrUeNetDevice>()->GetSlUeService ()->GetObject <NrSlUeProse> ();
+      Ptr<NrSlUeProse> remoteProse = remoteDevices.Get(i)->GetObject <NrUeNetDevice>()->GetObject <NrSlUeProse> ();
       remoteProse->SetRelaySelectionAlgorithm (selectionAlgorithm);
       Ptr<LteUeRrc> remoteRrc = remoteDevices.Get(i)->GetObject <NrUeNetDevice>()->GetRrc ();
       remoteRrc->EnableUeSlRsrpMeasurements ();
@@ -380,14 +380,38 @@ NrSlProseHelper::EnableRelayTraces (void)
 {
   NS_LOG_FUNCTION (this);
   //Relay discovery traces
-  Config::Connect ("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/NrSlService/$ns3::NrSlUeProse/RelayDiscoveryTrace", MakeBoundCallback (&NrSlRelayTrace::RelayDiscoveryTraceCallback, m_relayTrace));
+  Config::Connect ("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/$ns3::NrSlUeProse/RelayDiscoveryTrace", MakeBoundCallback (&NrSlRelayTrace::RelayDiscoveryTraceCallback, m_relayTrace));
 
   //Relay direct link communication establishment traces
-  Config::Connect ("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/NrSlService/$ns3::NrSlUeProse/RelaySelectionTrace", MakeBoundCallback (&NrSlRelayTrace::RelaySelectionTraceCallback, m_relayTrace));
+  Config::Connect ("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/$ns3::NrSlUeProse/RelaySelectionTrace", MakeBoundCallback (&NrSlRelayTrace::RelaySelectionTraceCallback, m_relayTrace));
 
   //Relay-Remote RSRP measurement
-  Config::Connect ("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/NrSlService/$ns3::NrSlUeProse/RelayRsrpTrace", MakeBoundCallback (&NrSlRelayTrace::RelayRsrpTraceCallback, m_relayTrace));
+  Config::Connect ("/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/$ns3::NrSlUeProse/RelayRsrpTrace", MakeBoundCallback (&NrSlRelayTrace::RelayRsrpTraceCallback, m_relayTrace));
 
+}
+
+void
+NrSlProseHelper::InstallNrSlDiscoveryConfiguration (NetDeviceContainer relays, NetDeviceContainer remotes, const LteRrcSap::SlDiscConfigCommon discConfig)
+{
+  NS_LOG_FUNCTION (this);
+
+  for (auto i = relays.Begin (); i != relays.End (); ++i)
+    {
+      Ptr<NetDevice> netRelayDev = *i;
+      Ptr<NrUeNetDevice> nrRelayDev = netRelayDev->GetObject <NrUeNetDevice>();
+      Ptr<LteUeRrc> lteRelayRrc = nrRelayDev->GetRrc ();
+      Ptr<NrSlUeRrc> nrSlRelayRrc = lteRelayRrc->GetObject <NrSlUeRrc> ();
+      nrSlRelayRrc->SetNrSlDiscoveryRelayConfiguration (discConfig.slRelayUeConfigCommon);
+    }
+
+  for (auto j = remotes.Begin (); j != remotes.End (); ++j)
+    {
+      Ptr<NetDevice> netRemoteDev = *j;
+      Ptr<NrUeNetDevice> nrRemoteDev = netRemoteDev->GetObject <NrUeNetDevice>();
+      Ptr<LteUeRrc> lteRemoteRrc = nrRemoteDev->GetRrc ();
+      Ptr<NrSlUeRrc> nrSlRemoteRrc = lteRemoteRrc->GetObject <NrSlUeRrc> ();
+      nrSlRemoteRrc->SetNrSlDiscoveryRemoteConfiguration (discConfig.slRemoteUeConfigCommon);
+    }
 }
 
 } // namespace ns3

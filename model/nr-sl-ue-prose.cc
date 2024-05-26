@@ -1048,7 +1048,8 @@ NrSlUeProse::DoNotifyChangeOfDirectLinkState (uint32_t peerL2Id, NrSlUeProseDirL
                   }
             
                 //Notify the RRC to delete the Rx sidelink data bearer for this remote in connection with the removed relay
-                m_nrSlUeSvcRrcSapProvider->NotifySidelinkConnectionRelease (peerL2Id, m_l2Id);
+                //Pass the maximum value of lcId to remove bearers for all LCs
+                m_nrSlUeSvcRrcSapProvider->NotifySidelinkConnectionRelease (peerL2Id, m_l2Id, std::numeric_limits<uint8_t>::max());
                 //Remove context
                 m_unicastDirectLinks.erase (peerL2Id);
               }
@@ -1058,7 +1059,8 @@ NrSlUeProse::DoNotifyChangeOfDirectLinkState (uint32_t peerL2Id, NrSlUeProseDirL
                 NS_LOG_FUNCTION ("This is a relay in RELEASED state. A ReleaseAccept was sent to the remote!");
 
                 //Notify the RRC to delete the Rx sidelink data bearer for this relay in connection with the removed remote
-                m_nrSlUeSvcRrcSapProvider->NotifySidelinkConnectionRelease (peerL2Id, m_l2Id);
+                //Pass the maximum value of lcId to remove bearers for all LCs
+                m_nrSlUeSvcRrcSapProvider->NotifySidelinkConnectionRelease (peerL2Id, m_l2Id, std::numeric_limits<uint8_t>::max());
 
                 //Reconfigure data bearers to take into account the release of the link       
                 RemoveDataRadioBearersForU2nRelay (peerL2Id, info.relayInfo, info.ipInfo);
@@ -1074,7 +1076,8 @@ NrSlUeProse::DoNotifyChangeOfDirectLinkState (uint32_t peerL2Id, NrSlUeProseDirL
             // Tx bearers
             DeleteDirectLinkDataRadioBearer (peerL2Id, info.ipInfo);
             // Rx bearers
-            m_nrSlUeSvcRrcSapProvider->NotifySidelinkConnectionRelease (peerL2Id, m_l2Id);
+            //Pass the maximum value of lcId to remove bearers for all LCs
+            m_nrSlUeSvcRrcSapProvider->NotifySidelinkConnectionRelease (peerL2Id, m_l2Id, std::numeric_limits<uint8_t>::max());
           }
         break;
       default:
@@ -1134,7 +1137,6 @@ NrSlUeProse::ConfigureDataRadioBearersForU2nRelay (uint32_t peerL2Id,
   //Tell the NAS to (re)configure the UL and SL data bearers to have the data packets
   //flowing in the appropriate path
   m_nrSlUeSvcNasSapProvider->ConfigureNrSlDataRadioBearersForU2nRelay (peerL2Id, relayInfo.role, ipInfo, relayDrbId, slInfo);
-
 }
 
 void

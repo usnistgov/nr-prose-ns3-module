@@ -250,6 +250,15 @@ public:
                                    NrSlUeProse::DiscoveryModel discoveryModel, Ptr<NrSlUeProseRelaySelectionAlgorithm> selectionAlgorithm,
                                    Ptr<EpcTft> tft, EpsBearer bearer);
 
+  /**
+   * \brief Install NR Sidelink relay discovery/(re)selection configuration for both remote and relay UEs
+   *
+   * \param relays the relay UEs net device container
+   * \param remotes the remote UEs net device container
+   * \param discConfig the structure defined as LteRrcSap::SlDiscConfigCommon
+   */
+  void InstallNrSlDiscoveryConfiguration (NetDeviceContainer relays, NetDeviceContainer remotes, const LteRrcSap::SlDiscConfigCommon discConfig);
+
 protected:
   /**
    * \brief \c DoDispose method inherited from \c Object
