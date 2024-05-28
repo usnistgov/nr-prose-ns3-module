@@ -416,7 +416,6 @@ main(int argc, char* argv[])
     /*************************Spectrum division ****************************/
 
     BandwidthPartInfoPtrVector allBwps;
-    CcBwpCreator ccBwpCreator;
 
     OperationBandInfo band;
 
@@ -514,21 +513,39 @@ main(int argc, char* argv[])
     NetDeviceContainer inNetUeNetDev = nrHelper->InstallUeDevice(inNetUeNodes, inNetBwp);
     NetDeviceContainer enbNetDev = nrHelper->InstallGnbDevice(gNbNodes, inNetBwp);
 
-    // SL UE MAC configuration
-    nrHelper->SetUeMacAttribute("EnableSensing", BooleanValue(false));
-    nrHelper->SetUeMacAttribute("T1", UintegerValue(2));
-    nrHelper->SetUeMacAttribute("T2", UintegerValue(33));
-    nrHelper->SetUeMacAttribute("ActivePoolId", UintegerValue(0));
-    nrHelper->SetUeMacAttribute("NumSidelinkProcess", UintegerValue(255));
-    nrHelper->SetUeMacAttribute("SlThresPsschRsrp", IntegerValue(-128));
-
     // SL BWP manager configuration
     uint8_t bwpIdSl = 1;
     nrHelper->SetBwpManagerTypeId(TypeId::LookupByName("ns3::NrSlBwpManagerUe"));
     nrHelper->SetUeBwpManagerAlgorithmAttribute("GBR_MC_PUSH_TO_TALK", UintegerValue(bwpIdSl));
 
+    // For relays, we need a special configuration with one Bwp configured
+    // with a Mac of type NrUeMac, and one Bwp configured with a Mac of type
+    // NrSlUeMac.  Use a variation of InstallUeDevice to configure that, and
+    // pass in a vector of object factories to account for the different Macs
+    std::vector<ObjectFactory> nrUeMacFactories;
+    ObjectFactory nrUeMacFactory;
+    nrUeMacFactory.SetTypeId(NrUeMac::GetTypeId());
+    nrUeMacFactories.emplace_back(nrUeMacFactory);
+    ObjectFactory nrSlUeMacFactory;
+    nrSlUeMacFactory.SetTypeId(NrSlUeMac::GetTypeId());
+    nrSlUeMacFactory.Set("EnableSensing", BooleanValue(false));
+    nrSlUeMacFactory.Set("T1", UintegerValue(2));
+    nrSlUeMacFactory.Set("ActivePoolId", UintegerValue(0));
+    nrSlUeMacFactory.Set("NumHarqProcess", UintegerValue(255));
+    nrSlUeMacFactory.Set("SlThresPsschRsrp", IntegerValue(-128));
+    nrUeMacFactories.emplace_back(nrSlUeMacFactory);
+
     // Install both BWPs on U2N relays
-    NetDeviceContainer relayUeNetDev = nrHelper->InstallUeDevice(relayUeNodes, allBwps);
+    NetDeviceContainer relayUeNetDev =
+        nrHelper->InstallUeDevice(relayUeNodes, allBwps, nrUeMacFactories);
+
+    // SL UE MAC configuration (for non relay UEs)
+    nrHelper->SetUeMacTypeId(NrSlUeMac::GetTypeId());
+    nrHelper->SetUeMacAttribute("EnableSensing", BooleanValue(false));
+    nrHelper->SetUeMacAttribute("T1", UintegerValue(2));
+    nrHelper->SetUeMacAttribute("ActivePoolId", UintegerValue(0));
+    nrHelper->SetUeMacAttribute("NumHarqProcess", UintegerValue(255));
+    nrHelper->SetUeMacAttribute("SlThresPsschRsrp", IntegerValue(-128));
 
     // Install both BWPs on SL-only UEs
     // This was needed to avoid errors with bwpId and vector indexes during device installation
@@ -826,6 +843,7 @@ main(int argc, char* argv[])
     initSlInfo.m_harqEnabled = false;
     initSlInfo.m_priority = 0;
     initSlInfo.m_rri = Seconds(0);
+    initSlInfo.m_pdb = MilliSeconds(20);
 
     SidelinkInfo trgtSlInfo;
     trgtSlInfo.m_castType = SidelinkInfo::CastType::Unicast;
@@ -833,6 +851,7 @@ main(int argc, char* argv[])
     trgtSlInfo.m_harqEnabled = false;
     trgtSlInfo.m_priority = 0;
     trgtSlInfo.m_rri = Seconds(0);
+    trgtSlInfo.m_pdb = MilliSeconds(20);
     NS_LOG_INFO("Configuring SL-only unicast direct links...");
 
     for (uint32_t i = 0; i < slUeNodes.GetN() - 1; ++i)
@@ -882,6 +901,7 @@ main(int argc, char* argv[])
     remoteUeSlInfo.m_harqEnabled = false;
     remoteUeSlInfo.m_priority = 0;
     remoteUeSlInfo.m_rri = Seconds(0);
+    remoteUeSlInfo.m_pdb = MilliSeconds(20);
 
     SidelinkInfo relayUeSlInfo;
     relayUeSlInfo.m_castType = SidelinkInfo::CastType::Unicast;
@@ -889,6 +909,7 @@ main(int argc, char* argv[])
     relayUeSlInfo.m_harqEnabled = false;
     relayUeSlInfo.m_priority = 0;
     relayUeSlInfo.m_rri = Seconds(0);
+    relayUeSlInfo.m_pdb = MilliSeconds(20);
     for (uint32_t i = 0; i < slUeNodes.GetN(); ++i)
     {
         for (uint32_t j = 0; j < relayUeNetDev.GetN(); ++j)
@@ -1235,14 +1256,14 @@ main(int argc, char* argv[])
     pscchPhyStats.SetDb(&db, "pscchRxUePhy");
     Config::ConnectWithoutContext(
         "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/"
-        "NrSpectrumPhyList/*/RxPscchTraceUe",
+        "SpectrumPhy/RxPscchTraceUe",
         MakeBoundCallback(&NotifySlPscchRx, &pscchPhyStats));
 
     UePhyPsschRxOutputStats psschPhyStats;
     psschPhyStats.SetDb(&db, "psschRxUePhy");
     Config::ConnectWithoutContext(
         "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/"
-        "NrSpectrumPhyList/*/RxPsschTraceUe",
+        "SpectrumPhy/RxPsschTraceUe",
         MakeBoundCallback(&NotifySlPsschRx, &psschPhyStats));
 
     UeToUePktTxRxOutputStats pktStats;

@@ -518,7 +518,33 @@ main(int argc, char* argv[])
     NetDeviceContainer inNetUeNetDev = nrHelper->InstallUeDevice(inNetUeNodes, inNetBwp);
     NetDeviceContainer enbNetDev = nrHelper->InstallGnbDevice(gNbNodes, inNetBwp);
 
-    // SL UE MAC configuration
+    // SL BWP manager configuration
+    uint8_t bwpIdSl = 1;
+    nrHelper->SetBwpManagerTypeId(TypeId::LookupByName("ns3::NrSlBwpManagerUe"));
+    nrHelper->SetUeBwpManagerAlgorithmAttribute("GBR_MC_PUSH_TO_TALK", UintegerValue(bwpIdSl));
+
+    // For relays, we need a special configuration with one Bwp configured
+    // with a Mac of type NrUeMac, and one Bwp configured with a Mac of type
+    // NrSlUeMac.  Use a variation of InstallUeDevice to configure that, and
+    // pass in a vector of object factories to account for the different Macs
+    std::vector<ObjectFactory> nrUeMacFactories;
+    ObjectFactory nrUeMacFactory;
+    nrUeMacFactory.SetTypeId(NrUeMac::GetTypeId());
+    nrUeMacFactories.emplace_back(nrUeMacFactory);
+    ObjectFactory nrSlUeMacFactory;
+    nrSlUeMacFactory.SetTypeId(NrSlUeMac::GetTypeId());
+    nrSlUeMacFactory.Set("EnableSensing", BooleanValue(false));
+    nrSlUeMacFactory.Set("T1", UintegerValue(2));
+    nrSlUeMacFactory.Set("ActivePoolId", UintegerValue(0));
+    nrSlUeMacFactory.Set("NumHarqProcess", UintegerValue(255));
+    nrSlUeMacFactory.Set("SlThresPsschRsrp", IntegerValue(-128));
+    nrUeMacFactories.emplace_back(nrSlUeMacFactory);
+
+    // Install both BWPs on U2N relays
+    NetDeviceContainer relayUeNetDev =
+        nrHelper->InstallUeDevice(relayUeNodes, allBwps, nrUeMacFactories);
+
+    // SL UE MAC configuration (for non relay UEs)
     nrHelper->SetUeMacTypeId(NrSlUeMac::GetTypeId());
     nrHelper->SetUeMacAttribute("EnableSensing", BooleanValue(false));
     nrHelper->SetUeMacAttribute("T1", UintegerValue(2));
@@ -526,14 +552,9 @@ main(int argc, char* argv[])
     nrHelper->SetUeMacAttribute("NumHarqProcess", UintegerValue(255));
     nrHelper->SetUeMacAttribute("SlThresPsschRsrp", IntegerValue(-128));
 
-    // SL BWP manager configuration
-    uint8_t bwpIdSl = 1;
-    nrHelper->SetBwpManagerTypeId(TypeId::LookupByName("ns3::NrSlBwpManagerUe"));
-    nrHelper->SetUeBwpManagerAlgorithmAttribute("GBR_MC_PUSH_TO_TALK", UintegerValue(bwpIdSl));
-
-    // Install both BWPs on SL UEs: relays and remotes
+    // Install both BWPs on remote UEs
     // This was needed to avoid errors with bwpId and vector indexes during device installation
-    NetDeviceContainer relayUeNetDev = nrHelper->InstallUeDevice(relayUeNodes, allBwps);
+
     NetDeviceContainer remoteUeNetDev = nrHelper->InstallUeDevice(remoteUeNodes, allBwps);
 
     std::set<uint8_t> slBwpIdContainer;
@@ -811,8 +832,8 @@ main(int argc, char* argv[])
     nrSlProseHelper->PrepareUesForUnicast(remoteUeNetDev);
 
     nrSlProseHelper->InstallNrSlDiscoveryConfiguration(relayUeNetDev,
-                                                  remoteUeNetDev,
-                                                  slDiscConfigCommon);
+                                                       remoteUeNetDev,
+                                                       slDiscConfigCommon);
 
     // Configure the value of timer Timer T5080 (Prose Direct Link Establishment Request
     // Retransmission) to a lower value than the standard (8.0 s) to speed connection in shorter

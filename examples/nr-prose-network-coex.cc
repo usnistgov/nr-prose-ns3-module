@@ -432,11 +432,11 @@ main(int argc, char* argv[])
     NetDeviceContainer inNetUeNetDev = nrHelper->InstallUeDevice(inNetUeNodes, inNetBwp);
 
     // SL UE MAC configuration
+    nrHelper->SetUeMacTypeId(NrSlUeMac::GetTypeId());
     nrHelper->SetUeMacAttribute("EnableSensing", BooleanValue(false));
     nrHelper->SetUeMacAttribute("T1", UintegerValue(2));
-    nrHelper->SetUeMacAttribute("T2", UintegerValue(33));
     nrHelper->SetUeMacAttribute("ActivePoolId", UintegerValue(0));
-    nrHelper->SetUeMacAttribute("NumSidelinkProcess", UintegerValue(255));
+    nrHelper->SetUeMacAttribute("NumHarqProcess", UintegerValue(255));
     nrHelper->SetUeMacAttribute("SlThresPsschRsrp", IntegerValue(-128));
 
     // SL BWP manager configuration
@@ -677,6 +677,7 @@ main(int argc, char* argv[])
     initSlInfo.m_harqEnabled = false;
     initSlInfo.m_priority = 0;
     initSlInfo.m_rri = Seconds(0);
+    initSlInfo.m_pdb = MilliSeconds(20);
 
     SidelinkInfo trgtSlInfo;
     trgtSlInfo.m_castType = SidelinkInfo::CastType::Unicast;
@@ -684,6 +685,7 @@ main(int argc, char* argv[])
     trgtSlInfo.m_harqEnabled = false;
     trgtSlInfo.m_priority = 0;
     trgtSlInfo.m_rri = Seconds(0);
+    trgtSlInfo.m_pdb = MilliSeconds(20);
     for (uint32_t i = 0; i < slUeNodes.GetN() - 1; ++i)
     {
         for (uint32_t j = i + 1; j < slUeNodes.GetN(); ++j)
@@ -862,14 +864,14 @@ main(int argc, char* argv[])
     pscchPhyStats.SetDb(&db, "pscchRxUePhy");
     Config::ConnectWithoutContext(
         "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/"
-        "NrSpectrumPhyList/*/RxPscchTraceUe",
+        "SpectrumPhy/RxPscchTraceUe",
         MakeBoundCallback(&NotifySlPscchRx, &pscchPhyStats));
 
     UePhyPsschRxOutputStats psschPhyStats;
     psschPhyStats.SetDb(&db, "psschRxUePhy");
     Config::ConnectWithoutContext(
         "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/"
-        "NrSpectrumPhyList/*/RxPsschTraceUe",
+        "SpectrumPhy/RxPsschTraceUe",
         MakeBoundCallback(&NotifySlPsschRx, &psschPhyStats));
 
     UeToUePktTxRxOutputStats pktStats;
@@ -914,8 +916,7 @@ main(int argc, char* argv[])
         << "time(s)\tnodeId\tTX/RX\tsrcL2Id\tdstL2Id\tmsgType" << std::endl;
     for (uint32_t i = 0; i < slUeNetDev.GetN(); ++i)
     {
-        Ptr<NrSlUeProse> prose = slUeNetDev.Get(i)
-                                     ->GetObject<NrSlUeProse>();
+        Ptr<NrSlUeProse> prose = slUeNetDev.Get(i)->GetObject<NrSlUeProse>();
         prose->TraceConnectWithoutContext("PC5SignallingPacketTrace",
                                           MakeBoundCallback(&TraceSinkPC5SignallingPacketTrace,
                                                             Pc5SignallingPacketTraceStream,

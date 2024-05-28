@@ -515,7 +515,7 @@ main(int argc, char* argv[])
 
     /*********************** End ProSe configuration ***************************/
 
-    // Datebase setup
+    // Database setup
     std::string exampleName = simTag + "-" + "nr-prose-discovery-relay";
     SQLiteOutput db(outputDir + exampleName + ".db");
 

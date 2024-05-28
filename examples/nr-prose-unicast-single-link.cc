@@ -438,11 +438,11 @@ main(int argc, char* argv[])
     nrHelper->SetUePhyAttribute("TxPower", DoubleValue(txPower));
 
     // NR Sidelink attribute of UE MAC, which are would be common for all the UEs
+    nrHelper->SetUeMacTypeId(NrSlUeMac::GetTypeId());
     nrHelper->SetUeMacAttribute("EnableSensing", BooleanValue(false));
     nrHelper->SetUeMacAttribute("T1", UintegerValue(2));
-    nrHelper->SetUeMacAttribute("T2", UintegerValue(33));
     nrHelper->SetUeMacAttribute("ActivePoolId", UintegerValue(0));
-    nrHelper->SetUeMacAttribute("NumSidelinkProcess", UintegerValue(4));
+    nrHelper->SetUeMacAttribute("NumHarqProcess", UintegerValue(4));
 
     uint8_t bwpIdForGbrMcptt = 0;
 
@@ -662,6 +662,7 @@ main(int argc, char* argv[])
     initSlInfo.m_harqEnabled = false;
     initSlInfo.m_priority = 0;
     initSlInfo.m_rri = Seconds(0);
+    initSlInfo.m_pdb = MilliSeconds(20);
 
     SidelinkInfo trgtSlInfo;
     trgtSlInfo.m_castType = SidelinkInfo::CastType::Unicast;
@@ -669,6 +670,7 @@ main(int argc, char* argv[])
     trgtSlInfo.m_harqEnabled = false;
     trgtSlInfo.m_priority = 0;
     trgtSlInfo.m_rri = Seconds(0);
+    trgtSlInfo.m_pdb = MilliSeconds(20);
 
     nrSlProseHelper->EstablishRealDirectLink(startDirLinkTime,
                                              ueVoiceNetDev.Get(0),
@@ -754,14 +756,14 @@ main(int argc, char* argv[])
     pscchPhyStats.SetDb(&db, "pscchRxUePhy");
     Config::ConnectWithoutContext(
         "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/"
-        "NrSpectrumPhyList/*/RxPscchTraceUe",
+        "SpectrumPhy/RxPscchTraceUe",
         MakeBoundCallback(&NotifySlPscchRx, &pscchPhyStats));
 
     UePhyPsschRxOutputStats psschPhyStats;
     psschPhyStats.SetDb(&db, "psschRxUePhy");
     Config::ConnectWithoutContext(
         "/NodeList/*/DeviceList/*/$ns3::NrUeNetDevice/ComponentCarrierMapUe/*/NrUePhy/"
-        "NrSpectrumPhyList/*/RxPsschTraceUe",
+        "SpectrumPhy/RxPsschTraceUe",
         MakeBoundCallback(&NotifySlPsschRx, &psschPhyStats));
 
     UeToUePktTxRxOutputStats pktStats;

@@ -404,21 +404,39 @@ main(int argc, char* argv[])
     nrHelper->GetGnbPhy(enbNetDev.Get(0), 0)->SetAttribute("Pattern", StringValue(pattern));
     nrHelper->GetGnbPhy(enbNetDev.Get(0), 0)->SetAttribute("TxPower", DoubleValue(gNBtotalTxPower));
 
-    // SL UE MAC configuration
+    // SL BWP manager configuration
+    uint8_t bwpIdSl = 1;
+    nrHelper->SetBwpManagerTypeId(TypeId::LookupByName("ns3::NrSlBwpManagerUe"));
+    nrHelper->SetUeBwpManagerAlgorithmAttribute("GBR_MC_PUSH_TO_TALK", UintegerValue(bwpIdSl));
+
+    // For relays, we need a special configuration with one Bwp configured
+    // with a Mac of type NrUeMac, and one Bwp configured with a Mac of type
+    // NrSlUeMac.  Use a variation of InstallUeDevice to configure that, and
+    // pass in a vector of object factories to account for the different Macs
+    std::vector<ObjectFactory> nrUeMacFactories;
+    ObjectFactory nrUeMacFactory;
+    nrUeMacFactory.SetTypeId(NrUeMac::GetTypeId());
+    nrUeMacFactories.emplace_back(nrUeMacFactory);
+    ObjectFactory nrSlUeMacFactory;
+    nrSlUeMacFactory.SetTypeId(NrSlUeMac::GetTypeId());
+    nrSlUeMacFactory.Set("EnableSensing", BooleanValue(false));
+    nrSlUeMacFactory.Set("T1", UintegerValue(2));
+    nrSlUeMacFactory.Set("ActivePoolId", UintegerValue(0));
+    nrSlUeMacFactory.Set("NumHarqProcess", UintegerValue(255));
+    nrSlUeMacFactory.Set("SlThresPsschRsrp", IntegerValue(-128));
+    nrUeMacFactories.emplace_back(nrSlUeMacFactory);
+
+    // Install both BWPs on U2N relays
+    NetDeviceContainer relayUeNetDev =
+        nrHelper->InstallUeDevice(relayUeNodes, allBwps, nrUeMacFactories);
+
+    // SL UE MAC configuration (for non relay UEs)
     nrHelper->SetUeMacTypeId(NrSlUeMac::GetTypeId());
     nrHelper->SetUeMacAttribute("EnableSensing", BooleanValue(false));
     nrHelper->SetUeMacAttribute("T1", UintegerValue(2));
     nrHelper->SetUeMacAttribute("ActivePoolId", UintegerValue(0));
     nrHelper->SetUeMacAttribute("NumHarqProcess", UintegerValue(255));
     nrHelper->SetUeMacAttribute("SlThresPsschRsrp", IntegerValue(-128));
-
-    // SL BWP manager configuration
-    uint8_t bwpIdSl = 1;
-    nrHelper->SetBwpManagerTypeId(TypeId::LookupByName("ns3::NrSlBwpManagerUe"));
-    nrHelper->SetUeBwpManagerAlgorithmAttribute("GBR_MC_PUSH_TO_TALK", UintegerValue(bwpIdSl));
-
-    // Install both BWPs on U2N relays
-    NetDeviceContainer relayUeNetDev = nrHelper->InstallUeDevice(relayUeNodes, allBwps);
 
     // Install both BWPs on remote UEs
     // This was needed to avoid errors with bwpId and vector indexes during device installation
@@ -722,6 +740,7 @@ main(int argc, char* argv[])
     remoteUeSlInfo.m_harqEnabled = false;
     remoteUeSlInfo.m_priority = 0;
     remoteUeSlInfo.m_rri = Seconds(0);
+    remoteUeSlInfo.m_pdb = MilliSeconds(20);
 
     SidelinkInfo relayUeSlInfo;
     relayUeSlInfo.m_castType = SidelinkInfo::CastType::Unicast;
@@ -729,6 +748,7 @@ main(int argc, char* argv[])
     relayUeSlInfo.m_harqEnabled = false;
     relayUeSlInfo.m_priority = 0;
     relayUeSlInfo.m_rri = Seconds(0);
+    relayUeSlInfo.m_pdb = MilliSeconds(20);
     uint32_t j = 0; // We have only one relay UE
     for (uint32_t i = 0; i < remoteUeNodes.GetN(); ++i)
     {
