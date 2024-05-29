@@ -33,47 +33,38 @@
  * subject to copyright protection within the United States.
  */
 
-
 #include "nr-sl-ue-service.h"
+
 #include <ns3/log.h>
 
-
-namespace ns3 {
-
-NS_LOG_COMPONENT_DEFINE ("NrSlUeService");
-
-NS_OBJECT_ENSURE_REGISTERED (NrSlUeService);
-
-
-NrSlUeService::NrSlUeService ()
+namespace ns3
 {
-  NS_LOG_FUNCTION (this);
+
+NS_LOG_COMPONENT_DEFINE("NrSlUeService");
+
+NS_OBJECT_ENSURE_REGISTERED(NrSlUeService);
+
+NrSlUeService::NrSlUeService()
+{
+    NS_LOG_FUNCTION(this);
 }
 
-
-NrSlUeService::~NrSlUeService ()
+NrSlUeService::~NrSlUeService()
 {
-  NS_LOG_FUNCTION (this);
+    NS_LOG_FUNCTION(this);
 }
 
 void
-NrSlUeService::DoDispose ()
+NrSlUeService::DoDispose()
 {
-  NS_LOG_FUNCTION (this);
+    NS_LOG_FUNCTION(this);
 }
 
 TypeId
-NrSlUeService::GetTypeId (void)
+NrSlUeService::GetTypeId(void)
 {
-  static TypeId tid = TypeId ("ns3::NrSlUeService")
-    .SetParent<Object> ()
-    .SetGroupName ("Nr")
-  ;
-  return tid;
+    static TypeId tid = TypeId("ns3::NrSlUeService").SetParent<Object>().SetGroupName("Nr");
+    return tid;
 }
 
-
 } // namespace ns3
-
-
-

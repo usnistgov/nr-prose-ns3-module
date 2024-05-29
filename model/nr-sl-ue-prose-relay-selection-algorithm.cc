@@ -33,185 +33,183 @@
  * subject to copyright protection within the United States.
  */
 
-#include <ns3/fatal-error.h>
-#include <ns3/log.h>
-#include <ns3/abort.h>
-#include <ns3/pointer.h>
-#include <ns3/object-map.h>
-#include <ns3/object-factory.h>
-#include <ns3/simulator.h>
-
 #include "nr-sl-ue-prose-relay-selection-algorithm.h"
 
-namespace ns3 {
+#include <ns3/abort.h>
+#include <ns3/fatal-error.h>
+#include <ns3/log.h>
+#include <ns3/object-factory.h>
+#include <ns3/object-map.h>
+#include <ns3/pointer.h>
+#include <ns3/simulator.h>
 
-NS_LOG_COMPONENT_DEFINE ("NrSlUeProseRelaySelectionAlgorithm");
-NS_OBJECT_ENSURE_REGISTERED (NrSlUeProseRelaySelectionAlgorithm);
+namespace ns3
+{
+
+NS_LOG_COMPONENT_DEFINE("NrSlUeProseRelaySelectionAlgorithm");
+NS_OBJECT_ENSURE_REGISTERED(NrSlUeProseRelaySelectionAlgorithm);
 
 TypeId
-NrSlUeProseRelaySelectionAlgorithm::GetTypeId (void)
+NrSlUeProseRelaySelectionAlgorithm::GetTypeId(void)
 {
-  static TypeId  tid = TypeId ("ns3::NrSlUeProseRelaySelectionAlgorithm")
-    .SetParent<Object> ()
-    .SetGroupName ("Nr")
-  ;
-  return tid;
+    static TypeId tid =
+        TypeId("ns3::NrSlUeProseRelaySelectionAlgorithm").SetParent<Object>().SetGroupName("Nr");
+    return tid;
 }
 
-NrSlUeProseRelaySelectionAlgorithm::NrSlUeProseRelaySelectionAlgorithm (void)
+NrSlUeProseRelaySelectionAlgorithm::NrSlUeProseRelaySelectionAlgorithm(void)
 {
-  NS_LOG_FUNCTION (this);
+    NS_LOG_FUNCTION(this);
 }
 
-NrSlUeProseRelaySelectionAlgorithm::~NrSlUeProseRelaySelectionAlgorithm (void)
+NrSlUeProseRelaySelectionAlgorithm::~NrSlUeProseRelaySelectionAlgorithm(void)
 {
-  NS_LOG_FUNCTION (this);
+    NS_LOG_FUNCTION(this);
 }
 
-NS_OBJECT_ENSURE_REGISTERED (NrSlUeProseRelaySelectionAlgorithmFirstAvailable);
+NS_OBJECT_ENSURE_REGISTERED(NrSlUeProseRelaySelectionAlgorithmFirstAvailable);
 
 TypeId
-NrSlUeProseRelaySelectionAlgorithmFirstAvailable::GetTypeId (void)
+NrSlUeProseRelaySelectionAlgorithmFirstAvailable::GetTypeId(void)
 {
-  static TypeId  tid = TypeId ("ns3::NrSlUeProseRelaySelectionAlgorithmFirstAvailable")
-    .SetParent<NrSlUeProseRelaySelectionAlgorithm> ()
-    .SetGroupName ("Nr")
-    .AddConstructor<NrSlUeProseRelaySelectionAlgorithmFirstAvailable> ()
-  ;
-  return tid;
+    static TypeId tid = TypeId("ns3::NrSlUeProseRelaySelectionAlgorithmFirstAvailable")
+                            .SetParent<NrSlUeProseRelaySelectionAlgorithm>()
+                            .SetGroupName("Nr")
+                            .AddConstructor<NrSlUeProseRelaySelectionAlgorithmFirstAvailable>();
+    return tid;
 }
 
-NrSlUeProseRelaySelectionAlgorithmFirstAvailable::NrSlUeProseRelaySelectionAlgorithmFirstAvailable (void)
-  : NrSlUeProseRelaySelectionAlgorithm ()
+NrSlUeProseRelaySelectionAlgorithmFirstAvailable::NrSlUeProseRelaySelectionAlgorithmFirstAvailable(
+    void)
+    : NrSlUeProseRelaySelectionAlgorithm()
 {
-  NS_LOG_FUNCTION (this);
+    NS_LOG_FUNCTION(this);
 }
 
-NrSlUeProseRelaySelectionAlgorithmFirstAvailable::~NrSlUeProseRelaySelectionAlgorithmFirstAvailable (void)
+NrSlUeProseRelaySelectionAlgorithmFirstAvailable::~NrSlUeProseRelaySelectionAlgorithmFirstAvailable(
+    void)
 {
-  NS_LOG_FUNCTION (this);
+    NS_LOG_FUNCTION(this);
 }
 
 NrSlUeProse::RelayInfo
-NrSlUeProseRelaySelectionAlgorithmFirstAvailable::SelectRelay (std::vector<NrSlUeProse::RelayInfo> discoveredRelays)
+NrSlUeProseRelaySelectionAlgorithmFirstAvailable::SelectRelay(
+    std::vector<NrSlUeProse::RelayInfo> discoveredRelays)
 {
-  NS_LOG_FUNCTION (this << discoveredRelays.size ());
+    NS_LOG_FUNCTION(this << discoveredRelays.size());
 
-  NS_LOG_DEBUG ("Selection algorithm: first available relay");
-  return discoveredRelays.at (0);
+    NS_LOG_DEBUG("Selection algorithm: first available relay");
+    return discoveredRelays.at(0);
 }
 
-
-NS_OBJECT_ENSURE_REGISTERED (NrSlUeProseRelaySelectionAlgorithmRandom);
+NS_OBJECT_ENSURE_REGISTERED(NrSlUeProseRelaySelectionAlgorithmRandom);
 
 TypeId
-NrSlUeProseRelaySelectionAlgorithmRandom::GetTypeId (void)
+NrSlUeProseRelaySelectionAlgorithmRandom::GetTypeId(void)
 {
-  static TypeId  tid = TypeId ("ns3::NrSlUeProseRelaySelectionAlgorithmRandom")
-    .SetParent<NrSlUeProseRelaySelectionAlgorithm> ()
-    .SetGroupName ("Nr")
-    .AddConstructor<NrSlUeProseRelaySelectionAlgorithmRandom> ()
-  ;
-  return tid;
+    static TypeId tid = TypeId("ns3::NrSlUeProseRelaySelectionAlgorithmRandom")
+                            .SetParent<NrSlUeProseRelaySelectionAlgorithm>()
+                            .SetGroupName("Nr")
+                            .AddConstructor<NrSlUeProseRelaySelectionAlgorithmRandom>();
+    return tid;
 }
 
-NrSlUeProseRelaySelectionAlgorithmRandom::NrSlUeProseRelaySelectionAlgorithmRandom (void)
-  : NrSlUeProseRelaySelectionAlgorithm (),
-    m_rand (CreateObject<UniformRandomVariable> ())
+NrSlUeProseRelaySelectionAlgorithmRandom::NrSlUeProseRelaySelectionAlgorithmRandom(void)
+    : NrSlUeProseRelaySelectionAlgorithm(),
+      m_rand(CreateObject<UniformRandomVariable>())
 {
-  NS_LOG_FUNCTION (this);
+    NS_LOG_FUNCTION(this);
 }
 
-NrSlUeProseRelaySelectionAlgorithmRandom::~NrSlUeProseRelaySelectionAlgorithmRandom (void)
+NrSlUeProseRelaySelectionAlgorithmRandom::~NrSlUeProseRelaySelectionAlgorithmRandom(void)
 {
-  NS_LOG_FUNCTION (this);
+    NS_LOG_FUNCTION(this);
 }
-
 
 int64_t
-NrSlUeProseRelaySelectionAlgorithmRandom::AssignStreams (int64_t stream)
+NrSlUeProseRelaySelectionAlgorithmRandom::AssignStreams(int64_t stream)
 {
-  NS_LOG_FUNCTION (this << stream);
-  m_rand->SetStream (stream);
-  return 1;
+    NS_LOG_FUNCTION(this << stream);
+    m_rand->SetStream(stream);
+    return 1;
 }
 
-
 NrSlUeProse::RelayInfo
-NrSlUeProseRelaySelectionAlgorithmRandom::SelectRelay (std::vector<NrSlUeProse::RelayInfo> discoveredRelays)
+NrSlUeProseRelaySelectionAlgorithmRandom::SelectRelay(
+    std::vector<NrSlUeProse::RelayInfo> discoveredRelays)
 {
-  NS_LOG_FUNCTION (this << discoveredRelays.size ());
+    NS_LOG_FUNCTION(this << discoveredRelays.size());
 
-  NS_LOG_DEBUG ("Selection algorithm: random relay");
-  uint32_t i = m_rand->GetInteger (0, discoveredRelays.size() - 1);
+    NS_LOG_DEBUG("Selection algorithm: random relay");
+    uint32_t i = m_rand->GetInteger(0, discoveredRelays.size() - 1);
 
-  return discoveredRelays.at (i);
+    return discoveredRelays.at(i);
 }
 
 void
-NrSlUeProseRelaySelectionAlgorithmRandom::DoDispose (void)
+NrSlUeProseRelaySelectionAlgorithmRandom::DoDispose(void)
 {
-  m_rand = nullptr;
+    m_rand = nullptr;
 }
 
-NS_OBJECT_ENSURE_REGISTERED (NrSlUeProseRelaySelectionAlgorithmMaxRsrp);
+NS_OBJECT_ENSURE_REGISTERED(NrSlUeProseRelaySelectionAlgorithmMaxRsrp);
 
 TypeId
-NrSlUeProseRelaySelectionAlgorithmMaxRsrp::GetTypeId (void)
+NrSlUeProseRelaySelectionAlgorithmMaxRsrp::GetTypeId(void)
 {
-  static TypeId  tid = TypeId ("ns3::NrSlUeProseRelaySelectionAlgorithmMaxRsrp")
-    .SetParent<NrSlUeProseRelaySelectionAlgorithm> ()
-    .SetGroupName ("Nr")
-    .AddConstructor<NrSlUeProseRelaySelectionAlgorithmMaxRsrp> ()
-  ;
-  return tid;
+    static TypeId tid = TypeId("ns3::NrSlUeProseRelaySelectionAlgorithmMaxRsrp")
+                            .SetParent<NrSlUeProseRelaySelectionAlgorithm>()
+                            .SetGroupName("Nr")
+                            .AddConstructor<NrSlUeProseRelaySelectionAlgorithmMaxRsrp>();
+    return tid;
 }
 
-NrSlUeProseRelaySelectionAlgorithmMaxRsrp::NrSlUeProseRelaySelectionAlgorithmMaxRsrp (void)
-  : NrSlUeProseRelaySelectionAlgorithm ()
+NrSlUeProseRelaySelectionAlgorithmMaxRsrp::NrSlUeProseRelaySelectionAlgorithmMaxRsrp(void)
+    : NrSlUeProseRelaySelectionAlgorithm()
 {
-  NS_LOG_FUNCTION (this);
+    NS_LOG_FUNCTION(this);
 }
 
-NrSlUeProseRelaySelectionAlgorithmMaxRsrp::~NrSlUeProseRelaySelectionAlgorithmMaxRsrp (void)
+NrSlUeProseRelaySelectionAlgorithmMaxRsrp::~NrSlUeProseRelaySelectionAlgorithmMaxRsrp(void)
 {
-  NS_LOG_FUNCTION (this);
+    NS_LOG_FUNCTION(this);
 }
 
 NrSlUeProse::RelayInfo
-NrSlUeProseRelaySelectionAlgorithmMaxRsrp::SelectRelay (std::vector<NrSlUeProse::RelayInfo> discoveredRelays)
+NrSlUeProseRelaySelectionAlgorithmMaxRsrp::SelectRelay(
+    std::vector<NrSlUeProse::RelayInfo> discoveredRelays)
 {
-  NS_LOG_FUNCTION (this << discoveredRelays.size ());
+    NS_LOG_FUNCTION(this << discoveredRelays.size());
 
-  NS_LOG_DEBUG ("Selection algorithm: relay with best RSRP value");
-  
-  NrSlUeProse::RelayInfo relay;
-  relay.rsrp = (-1) * std::numeric_limits<double>::infinity();
-  bool found = false;
-  for (uint32_t i = 0; i < discoveredRelays.size (); ++i)
+    NS_LOG_DEBUG("Selection algorithm: relay with best RSRP value");
+
+    NrSlUeProse::RelayInfo relay;
+    relay.rsrp = (-1) * std::numeric_limits<double>::infinity();
+    bool found = false;
+    for (uint32_t i = 0; i < discoveredRelays.size(); ++i)
     {
-      NrSlUeProse::RelayInfo relayIt = discoveredRelays.at (i);
-      if ((relayIt.rsrp > relay.rsrp) && (relayIt.eligible == true))
-      {
-        NS_LOG_DEBUG ("Found at least one eligible relay!");
-        relay.l2Id = relayIt.l2Id;
-        relay.relayCode = relayIt.relayCode;
-        relay.rsrp = relayIt.rsrp;
-        relay.eligible = relayIt.eligible;
-        found = true;
-      }
+        NrSlUeProse::RelayInfo relayIt = discoveredRelays.at(i);
+        if ((relayIt.rsrp > relay.rsrp) && (relayIt.eligible == true))
+        {
+            NS_LOG_DEBUG("Found at least one eligible relay!");
+            relay.l2Id = relayIt.l2Id;
+            relay.relayCode = relayIt.relayCode;
+            relay.rsrp = relayIt.rsrp;
+            relay.eligible = relayIt.eligible;
+            found = true;
+        }
     }
-  if (!found)
+    if (!found)
     {
-      NS_LOG_DEBUG ("No eligible relay is found!");
-      relay.l2Id = 0;
-      relay.relayCode = 0;
-      double inf = std::numeric_limits<double>::infinity();
-      relay.rsrp = (-1) * inf;
-      relay.eligible = false;
+        NS_LOG_DEBUG("No eligible relay is found!");
+        relay.l2Id = 0;
+        relay.relayCode = 0;
+        double inf = std::numeric_limits<double>::infinity();
+        relay.rsrp = (-1) * inf;
+        relay.eligible = false;
     }
 
-  return relay;
+    return relay;
 }
 
 } // namespace ns3

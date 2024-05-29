@@ -38,8 +38,8 @@
 
 #include <ns3/object.h>
 
-
-namespace ns3 {
+namespace ns3
+{
 
 /**
  * \ingroup lte
@@ -50,21 +50,19 @@ namespace ns3 {
 
 class NrSlUeService : public Object
 {
-public:
+  public:
+    NrSlUeService();
+    virtual ~NrSlUeService();
 
-  NrSlUeService ();
-  virtual ~NrSlUeService ();
-
-  // inherited from Object
-  virtual void DoDispose (void);
-  /**
-   * \brief Get the type ID.
-   * \return the object TypeId
-   */
-  static TypeId GetTypeId (void);
-
+    // inherited from Object
+    virtual void DoDispose(void);
+    /**
+     * \brief Get the type ID.
+     * \return the object TypeId
+     */
+    static TypeId GetTypeId(void);
 };
 
-}  // namespace ns3
+} // namespace ns3
 
 #endif /* NR_SL_UE_SERVICE */

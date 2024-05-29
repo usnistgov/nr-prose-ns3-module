@@ -36,15 +36,17 @@
 #ifndef NR_SL_UE_PROSE_RELAY_SELECTION_ALGORITHM_H
 #define NR_SL_UE_PROSE_RELAY_SELECTION_ALGORITHM_H
 
+#include "nr-sl-ue-prose.h"
+
 #include <ns3/object.h>
-#include <ns3/timer.h>
-#include <ns3/tag.h>
-#include <vector>
 #include <ns3/random-variable-stream.h>
+#include <ns3/tag.h>
+#include <ns3/timer.h>
 
-#include <ns3/nr-sl-ue-prose.h>
+#include <vector>
 
-namespace ns3 {
+namespace ns3
+{
 
 /**
  * \ingroup nr
@@ -58,22 +60,22 @@ namespace ns3 {
  */
 class NrSlUeProseRelaySelectionAlgorithm : public Object
 {
+  public:
+    NrSlUeProseRelaySelectionAlgorithm(void);
+    virtual ~NrSlUeProseRelaySelectionAlgorithm(void);
+    static TypeId GetTypeId(void);
 
-public:
-  NrSlUeProseRelaySelectionAlgorithm (void);
-  virtual ~NrSlUeProseRelaySelectionAlgorithm (void);
-  static TypeId GetTypeId (void);
+    /**
+     * \brief Selects a relay from the available list.
+     *
+     * \param discoveredRelays List of discovered relays
+     *
+     * \returns The newly selected relay
+     */
+    virtual NrSlUeProse::RelayInfo SelectRelay(
+        std::vector<NrSlUeProse::RelayInfo> discoveredRelays) = 0;
 
-  /**
-   * \brief Selects a relay from the available list.
-   *
-   * \param discoveredRelays List of discovered relays 
-   * 
-   * \returns The newly selected relay
-   */
-  virtual NrSlUeProse::RelayInfo SelectRelay (std::vector<NrSlUeProse::RelayInfo> discoveredRelays) = 0;
-
-};//end of NrSlUeProseRelaySelectionAlgorithm
+}; // end of NrSlUeProseRelaySelectionAlgorithm
 
 /**
  * \ingroup nr
@@ -82,23 +84,22 @@ public:
  */
 class NrSlUeProseRelaySelectionAlgorithmFirstAvailable : public NrSlUeProseRelaySelectionAlgorithm
 {
+  public:
+    NrSlUeProseRelaySelectionAlgorithmFirstAvailable(void);
+    virtual ~NrSlUeProseRelaySelectionAlgorithmFirstAvailable(void);
+    static TypeId GetTypeId(void);
 
-public:
-  NrSlUeProseRelaySelectionAlgorithmFirstAvailable (void);
-  virtual ~NrSlUeProseRelaySelectionAlgorithmFirstAvailable (void);
-  static TypeId GetTypeId (void);
+    /**
+     * \brief Select first available relay.
+     *
+     * \param discoveredRelays List of discovered relays
+     *
+     * \returns The newly selected relay.
+     */
+    virtual NrSlUeProse::RelayInfo SelectRelay(
+        std::vector<NrSlUeProse::RelayInfo> discoveredRelays) override;
 
-  /**
-   * \brief Select first available relay.
-   *
-   * \param discoveredRelays List of discovered relays 
-   *
-   * \returns The newly selected relay.
-   */
-  virtual NrSlUeProse::RelayInfo SelectRelay (std::vector<NrSlUeProse::RelayInfo> discoveredRelays) override;
-
-};//end of NrSlUeProseRelaySelectionAlgorithmFirstAvailable
-
+}; // end of NrSlUeProseRelaySelectionAlgorithmFirstAvailable
 
 /**
  * \ingroup nr
@@ -107,27 +108,29 @@ public:
  */
 class NrSlUeProseRelaySelectionAlgorithmRandom : public NrSlUeProseRelaySelectionAlgorithm
 {
+  public:
+    NrSlUeProseRelaySelectionAlgorithmRandom(void);
+    virtual ~NrSlUeProseRelaySelectionAlgorithmRandom(void);
+    static TypeId GetTypeId(void);
+    virtual int64_t AssignStreams(int64_t stream);
 
-public:
-  NrSlUeProseRelaySelectionAlgorithmRandom (void);
-  virtual ~NrSlUeProseRelaySelectionAlgorithmRandom (void);
-  static TypeId GetTypeId (void);
-  virtual int64_t AssignStreams (int64_t stream);
+    /**
+     * \brief Select random relay.
+     *
+     * \param discoveredRelays List of discovered relays
+     *
+     * \returns The newly selected relay.
+     */
+    virtual NrSlUeProse::RelayInfo SelectRelay(
+        std::vector<NrSlUeProse::RelayInfo> discoveredRelays) override;
 
-  /**
-   * \brief Select random relay.
-   *
-   * \param discoveredRelays List of discovered relays 
-   *
-   * \returns The newly selected relay.
-   */
-  virtual NrSlUeProse::RelayInfo SelectRelay (std::vector<NrSlUeProse::RelayInfo> discoveredRelays) override;
-protected:
-  virtual void DoDispose (void) override;
-private:
-  Ptr<UniformRandomVariable> m_rand; //!< The uniform random variable
+  protected:
+    virtual void DoDispose(void) override;
 
-};//end of NrSlUeProseRelaySelectionAlgorithmRandom
+  private:
+    Ptr<UniformRandomVariable> m_rand; //!< The uniform random variable
+
+}; // end of NrSlUeProseRelaySelectionAlgorithmRandom
 
 /**
  * \ingroup nr
@@ -136,22 +139,22 @@ private:
  */
 class NrSlUeProseRelaySelectionAlgorithmMaxRsrp : public NrSlUeProseRelaySelectionAlgorithm
 {
+  public:
+    NrSlUeProseRelaySelectionAlgorithmMaxRsrp(void);
+    virtual ~NrSlUeProseRelaySelectionAlgorithmMaxRsrp(void);
+    static TypeId GetTypeId(void);
 
-public:
-  NrSlUeProseRelaySelectionAlgorithmMaxRsrp (void);
-  virtual ~NrSlUeProseRelaySelectionAlgorithmMaxRsrp (void);
-  static TypeId GetTypeId (void);
+    /**
+     * \brief Select the relay with the max RSRP.
+     *
+     * \param discoveredRelays List of discovered relays
+     *
+     * \returns The newly selected relay.
+     */
+    virtual NrSlUeProse::RelayInfo SelectRelay(
+        std::vector<NrSlUeProse::RelayInfo> discoveredRelays) override;
 
-  /**
-   * \brief Select the relay with the max RSRP.
-   *
-   * \param discoveredRelays List of discovered relays 
-   *
-   * \returns The newly selected relay.
-   */
-  virtual NrSlUeProse::RelayInfo SelectRelay (std::vector<NrSlUeProse::RelayInfo> discoveredRelays) override;
-
-};//end of NrSlUeProseRelaySelectionAlgorithmMaxRsrp
+}; // end of NrSlUeProseRelaySelectionAlgorithmMaxRsrp
 
 } // namespace ns3
 
