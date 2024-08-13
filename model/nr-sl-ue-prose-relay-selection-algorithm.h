@@ -40,8 +40,6 @@
 
 #include <ns3/object.h>
 #include <ns3/random-variable-stream.h>
-#include <ns3/tag.h>
-#include <ns3/timer.h>
 
 #include <vector>
 
@@ -49,7 +47,7 @@ namespace ns3
 {
 
 /**
- * \ingroup nr
+ * \ingroup nr-prose
  *
  * \brief Base class for NR ProSe Relay Selection Algorithms
  *
@@ -61,9 +59,9 @@ namespace ns3
 class NrSlUeProseRelaySelectionAlgorithm : public Object
 {
   public:
-    NrSlUeProseRelaySelectionAlgorithm(void);
-    virtual ~NrSlUeProseRelaySelectionAlgorithm(void);
-    static TypeId GetTypeId(void);
+    NrSlUeProseRelaySelectionAlgorithm();
+    ~NrSlUeProseRelaySelectionAlgorithm() override;
+    static TypeId GetTypeId();
 
     /**
      * \brief Selects a relay from the available list.
@@ -78,54 +76,40 @@ class NrSlUeProseRelaySelectionAlgorithm : public Object
 }; // end of NrSlUeProseRelaySelectionAlgorithm
 
 /**
- * \ingroup nr
+ * \ingroup nr-prose
  *
  * \brief Implements the first available relay selection algorithm
  */
 class NrSlUeProseRelaySelectionAlgorithmFirstAvailable : public NrSlUeProseRelaySelectionAlgorithm
 {
   public:
-    NrSlUeProseRelaySelectionAlgorithmFirstAvailable(void);
-    virtual ~NrSlUeProseRelaySelectionAlgorithmFirstAvailable(void);
-    static TypeId GetTypeId(void);
+    NrSlUeProseRelaySelectionAlgorithmFirstAvailable();
+    ~NrSlUeProseRelaySelectionAlgorithmFirstAvailable() override;
+    static TypeId GetTypeId();
 
-    /**
-     * \brief Select first available relay.
-     *
-     * \param discoveredRelays List of discovered relays
-     *
-     * \returns The newly selected relay.
-     */
-    virtual NrSlUeProse::RelayInfo SelectRelay(
+    NrSlUeProse::RelayInfo SelectRelay(
         std::vector<NrSlUeProse::RelayInfo> discoveredRelays) override;
 
 }; // end of NrSlUeProseRelaySelectionAlgorithmFirstAvailable
 
 /**
- * \ingroup nr
+ * \ingroup nr-prose
  *
  * \brief Implements the random relay selection algorithm
  */
 class NrSlUeProseRelaySelectionAlgorithmRandom : public NrSlUeProseRelaySelectionAlgorithm
 {
   public:
-    NrSlUeProseRelaySelectionAlgorithmRandom(void);
-    virtual ~NrSlUeProseRelaySelectionAlgorithmRandom(void);
-    static TypeId GetTypeId(void);
+    NrSlUeProseRelaySelectionAlgorithmRandom();
+    ~NrSlUeProseRelaySelectionAlgorithmRandom() override;
+    static TypeId GetTypeId();
     virtual int64_t AssignStreams(int64_t stream);
 
-    /**
-     * \brief Select random relay.
-     *
-     * \param discoveredRelays List of discovered relays
-     *
-     * \returns The newly selected relay.
-     */
-    virtual NrSlUeProse::RelayInfo SelectRelay(
+    NrSlUeProse::RelayInfo SelectRelay(
         std::vector<NrSlUeProse::RelayInfo> discoveredRelays) override;
 
   protected:
-    virtual void DoDispose(void) override;
+    void DoDispose() override;
 
   private:
     Ptr<UniformRandomVariable> m_rand; //!< The uniform random variable
@@ -133,25 +117,22 @@ class NrSlUeProseRelaySelectionAlgorithmRandom : public NrSlUeProseRelaySelectio
 }; // end of NrSlUeProseRelaySelectionAlgorithmRandom
 
 /**
- * \ingroup nr
+ * \ingroup nr-prose
  *
  * \brief Implements the max RSRP relay selection algorithm
+ *
+ * The RelayInfo with the maximum RSRP value, considering only those that
+ * are set to 'eligible', will be returned by SelectRelay().  If no eligible
+ * relays are found, SelectRelay() will return an uninitialized RelayInfo.
  */
 class NrSlUeProseRelaySelectionAlgorithmMaxRsrp : public NrSlUeProseRelaySelectionAlgorithm
 {
   public:
-    NrSlUeProseRelaySelectionAlgorithmMaxRsrp(void);
-    virtual ~NrSlUeProseRelaySelectionAlgorithmMaxRsrp(void);
-    static TypeId GetTypeId(void);
+    NrSlUeProseRelaySelectionAlgorithmMaxRsrp();
+    ~NrSlUeProseRelaySelectionAlgorithmMaxRsrp() override;
+    static TypeId GetTypeId();
 
-    /**
-     * \brief Select the relay with the max RSRP.
-     *
-     * \param discoveredRelays List of discovered relays
-     *
-     * \returns The newly selected relay.
-     */
-    virtual NrSlUeProse::RelayInfo SelectRelay(
+    NrSlUeProse::RelayInfo SelectRelay(
         std::vector<NrSlUeProse::RelayInfo> discoveredRelays) override;
 
 }; // end of NrSlUeProseRelaySelectionAlgorithmMaxRsrp

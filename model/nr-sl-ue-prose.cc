@@ -853,12 +853,12 @@ NrSlUeProse::SelectRelay()
     else
     {
         // Check if the list of discovered relays is empty
-        if (m_discoveredRelaysList.size() != 0)
+        if (m_discoveredRelaysList.empty())
         {
             newRelay = m_relaySelectionAlgorithm->SelectRelay(m_discoveredRelaysList);
 
-            // Check if it is an eligibale relay
-            if (newRelay.l2Id != 0)
+            // Check if it is an eligible relay
+            if (newRelay.l2Id != std::numeric_limits<uint32_t>::max())
             {
                 // Trace the attempt to change a selected relay
                 m_relaySelectionTrace(m_l2Id,
@@ -933,7 +933,7 @@ NrSlUeProse::SelectRelay()
             // No relay gets selected: check if we have an ongoing connection and release it
             else
             {
-                if (m_currentSelectedRelay.l2Id != 0)
+                if (m_currentSelectedRelay.l2Id != std::numeric_limits<uint32_t>::max())
                 {
                     // Get existing link
                     auto it = m_unicastDirectLinks.find(m_currentSelectedRelay.l2Id);
