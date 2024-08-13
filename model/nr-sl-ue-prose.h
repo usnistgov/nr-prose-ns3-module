@@ -48,7 +48,7 @@
 
 #include <unordered_map>
 
-//#include <ns3/nr-sl-prose-relay-handle.h>
+// #include <ns3/nr-sl-prose-relay-handle.h>
 
 namespace ns3
 {
@@ -129,13 +129,13 @@ class NrSlUeProse : public NrSlUeService
         uint32_t dstL2Id;     ///< destination L2 ID
     };
 
-    ///< Information of discovered relays
+    ///< Information about discovered relays
     struct RelayInfo
     {
-        uint32_t l2Id;
-        uint32_t relayCode;
-        double rsrp;
-        bool eligible;
+        uint32_t l2Id{std::numeric_limits<uint32_t>::max()};      ///< layer 2 ID
+        uint32_t relayCode{std::numeric_limits<uint32_t>::max()}; ///< relay code
+        double rsrp{-std::numeric_limits<double>::infinity()};    ///< RSRP
+        bool eligible{false}; ///< whether relay meets RSRP threshold/hysteresis criteria
     };
 
   protected:
