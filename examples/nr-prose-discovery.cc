@@ -458,8 +458,10 @@ main(int argc, char* argv[])
      * Fix the random streams
      */
     int64_t stream = 1;
-    stream += nrHelper->AssignStreams(ueVoiceNetDev, stream);
-    stream += nrSlHelper->AssignStreams(ueVoiceNetDev, stream);
+    const uint64_t streamIncrement = 1000;
+    nrHelper->AssignStreams(ueVoiceNetDev, stream);
+    stream += streamIncrement;
+    nrSlHelper->AssignStreams(ueVoiceNetDev, stream);
 
     /*
      * Configure the IPv4 stack

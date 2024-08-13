@@ -607,8 +607,10 @@ main(int argc, char* argv[])
      * Fix the random streams
      */
     int64_t stream = 1;
-    stream += nrHelper->AssignStreams(ueVoiceNetDev, stream);
-    stream += nrSlHelper->AssignStreams(ueVoiceNetDev, stream);
+    const uint64_t streamIncrement = 1000;
+    nrHelper->AssignStreams(ueVoiceNetDev, stream);
+    stream += streamIncrement;
+    nrSlHelper->AssignStreams(ueVoiceNetDev, stream);
 
     /*
      * Configure the IPv4 stack
@@ -711,6 +713,9 @@ main(int argc, char* argv[])
     sidelinkSink.SetAttribute("EnableSeqTsSizeHeader", BooleanValue(true));
     serverApps = sidelinkSink.Install(ueVoiceContainer.Get(1)); // Installed in UE2
     serverApps.Start(Seconds(2.0));
+
+    stream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(ueVoiceContainer, stream);
 
     /******************** End application configuration ************************/
 

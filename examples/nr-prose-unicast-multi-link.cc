@@ -583,8 +583,10 @@ main(int argc, char* argv[])
      * Fix the random streams
      */
     int64_t stream = 1;
-    stream += nrHelper->AssignStreams(ueVoiceNetDev, stream);
-    stream += nrSlHelper->AssignStreams(ueVoiceNetDev, stream);
+    const uint64_t streamIncrement = 1000;
+    nrHelper->AssignStreams(ueVoiceNetDev, stream);
+    stream += streamIncrement;
+    nrSlHelper->AssignStreams(ueVoiceNetDev, stream);
 
     /*
      * Configure the IPv4 stack
@@ -681,6 +683,8 @@ main(int argc, char* argv[])
     // Random variable to randomize a bit start times of the client applications
     // to avoid simulation artifacts of all the TX UEs transmitting at the same time.
     Ptr<UniformRandomVariable> startTimeRnd = CreateObject<UniformRandomVariable>();
+    stream += streamIncrement;
+    startTimeRnd->SetStream(stream);
     startTimeRnd->SetAttribute("Min", DoubleValue(0));
     startTimeRnd->SetAttribute("Max", DoubleValue(0.10));
 
@@ -738,6 +742,9 @@ main(int argc, char* argv[])
     sidelinkSink.SetAttribute("EnableSeqTsSizeHeader", BooleanValue(true));
     serverApps = sidelinkSink.Install(ueVoiceContainer); // Installed in all UEs
     serverApps.Start(Seconds(2.0));
+
+    stream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(ueVoiceContainer, stream);
 
     /******************** End application configuration ************************/
 

@@ -716,12 +716,18 @@ main(int argc, char* argv[])
 
     // Set random streams
     int64_t randomStream = 1;
-    randomStream += nrHelper->AssignStreams(enbNetDev, randomStream);
-    randomStream += nrHelper->AssignStreams(inNetUeNetDev, randomStream);
-    randomStream += nrHelper->AssignStreams(relayUeNetDev, randomStream);
-    randomStream += nrSlHelper->AssignStreams(relayUeNetDev, randomStream);
-    randomStream += nrHelper->AssignStreams(slUeNetDev, randomStream);
-    randomStream += nrSlHelper->AssignStreams(slUeNetDev, randomStream);
+    const uint64_t streamIncrement = 1000;
+    nrHelper->AssignStreams(enbNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrHelper->AssignStreams(inNetUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrHelper->AssignStreams(relayUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrSlHelper->AssignStreams(relayUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrHelper->AssignStreams(slUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrSlHelper->AssignStreams(slUeNetDev, randomStream);
 
     // create the internet and install the IP stack on the UEs
     // get SGW/PGW and create a single RemoteHost
@@ -1135,6 +1141,8 @@ main(int argc, char* argv[])
     // Random variable to randomize a bit start times of the client applications
     // to avoid simulation artifacts of all the TX UEs transmitting at the same time.
     Ptr<UniformRandomVariable> startTimeRnd = CreateObject<UniformRandomVariable>();
+    randomStream += streamIncrement;
+    startTimeRnd->SetStream(randomStream);
     startTimeRnd->SetAttribute("Min", DoubleValue(0));
     startTimeRnd->SetAttribute("Max", DoubleValue(0.10));
     uint16_t slPort = 8000;
@@ -1200,6 +1208,17 @@ main(int argc, char* argv[])
     slServerApps.Start(Seconds(1.0));
     slServerApps.Stop(Seconds(simTime));
     /******************** End SL application configuration ************************/
+
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(gNbNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(inNetUeNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(relayUeNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(slUeNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(remoteHostContainer, randomStream);
 
     /******************* PC5-S messages tracing ********************************/
     AsciiTraceHelper ascii;
