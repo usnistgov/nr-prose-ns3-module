@@ -343,6 +343,7 @@ main(int argc, char* argv[])
     bwp0->m_channelBandwidth = bandwidthCc0Bpw0;
     bwp0->m_lowerFrequency = bwp0->m_centralFrequency - bwp0->m_channelBandwidth / 2;
     bwp0->m_higherFrequency = bwp0->m_centralFrequency + bwp0->m_channelBandwidth / 2;
+    bwp0->m_scenario = BandwidthPartInfo::Scenario::RMa_LoS;
 
     cc0->AddBwp(std::move(bwp0));
 
@@ -352,6 +353,7 @@ main(int argc, char* argv[])
     bwp1->m_channelBandwidth = bandwidthCc0Bpw1;
     bwp1->m_lowerFrequency = bwp1->m_centralFrequency - bwp1->m_channelBandwidth / 2;
     bwp1->m_higherFrequency = bwp1->m_centralFrequency + bwp1->m_channelBandwidth / 2;
+    bwp1->m_scenario = BandwidthPartInfo::Scenario::RMa_LoS;
 
     cc0->AddBwp(std::move(bwp1));
 
