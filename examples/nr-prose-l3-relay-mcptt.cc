@@ -1122,12 +1122,18 @@ main(int argc, char* argv[])
 
     // Set random streams
     int64_t randomStream = 1;
-    randomStream += nrHelper->AssignStreams(enbNetDev, randomStream);
-    randomStream += nrHelper->AssignStreams(inNetUeNetDev, randomStream);
-    randomStream += nrHelper->AssignStreams(relayUeNetDev, randomStream);
-    randomStream += nrSlHelper->AssignStreams(relayUeNetDev, randomStream);
-    randomStream += nrHelper->AssignStreams(remoteUeNetDev, randomStream);
-    randomStream += nrSlHelper->AssignStreams(remoteUeNetDev, randomStream);
+    const uint64_t streamIncrement = 1000;
+    nrHelper->AssignStreams(enbNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrHelper->AssignStreams(inNetUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrHelper->AssignStreams(relayUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrSlHelper->AssignStreams(relayUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrHelper->AssignStreams(remoteUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrSlHelper->AssignStreams(remoteUeNetDev, randomStream);
 
     // create the internet and install the IP stack on the UEs
     // get SGW/PGW
@@ -1922,6 +1928,18 @@ main(int argc, char* argv[])
     allClientApps.Stop(simTime - Seconds(1.0));
     serverApps.Start(timeStartTraffic - Seconds(0.6));
     serverApps.Stop(simTime - Seconds(1.0));
+
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(gNbNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(inNetUeNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(relayUeNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(remoteUeNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(remoteHostContainer, randomStream);
+
     /******************** End Application configuration ************************/
 
     /**************** MCPTT metrics tracing ************************************/

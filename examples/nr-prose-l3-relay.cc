@@ -599,12 +599,18 @@ main(int argc, char* argv[])
 
     // Set random streams
     int64_t randomStream = 1;
-    randomStream += nrHelper->AssignStreams(enbNetDev, randomStream);
-    randomStream += nrHelper->AssignStreams(inNetUeNetDev, randomStream);
-    randomStream += nrHelper->AssignStreams(relayUeNetDev, randomStream);
-    randomStream += nrSlHelper->AssignStreams(relayUeNetDev, randomStream);
-    randomStream += nrHelper->AssignStreams(remoteUeNetDev, randomStream);
-    randomStream += nrSlHelper->AssignStreams(remoteUeNetDev, randomStream);
+    const uint64_t streamIncrement = 1000;
+    nrHelper->AssignStreams(enbNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrHelper->AssignStreams(inNetUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrHelper->AssignStreams(relayUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrSlHelper->AssignStreams(relayUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrHelper->AssignStreams(remoteUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrSlHelper->AssignStreams(remoteUeNetDev, randomStream);
 
     // create the internet and install the IP stack on the UEs
     // get SGW/PGW and create a single RemoteHost
@@ -774,6 +780,8 @@ main(int argc, char* argv[])
     // Random variable to randomize a bit start times of the client applications
     // to avoid simulation artifacts of all the TX UEs transmitting at the same time.
     Ptr<UniformRandomVariable> startTimeRnd = CreateObject<UniformRandomVariable>();
+    randomStream += streamIncrement;
+    startTimeRnd->SetStream(randomStream);
     startTimeRnd->SetAttribute("Min", DoubleValue(0));
     startTimeRnd->SetAttribute("Max", DoubleValue(0.1)); // seconds
 
@@ -983,6 +991,17 @@ main(int argc, char* argv[])
     serverApps.Stop(Seconds(simTime));
     clientApps.Stop(Seconds(simTime));
     /********* END In-network only applications configuration ******/
+
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(gNbNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(inNetUeNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(relayUeNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(remoteUeNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(remoteHostContainer, randomStream);
 
     /************ SL traces database setup *************************************/
     std::string exampleName = simTag + "-" + "nr-prose-l3-relay";
