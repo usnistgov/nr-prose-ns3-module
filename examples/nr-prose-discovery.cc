@@ -154,6 +154,7 @@ main(int argc, char* argv[])
     Time startDiscTime = Seconds(2.0); // Time to start the Prose discovery procedure in seconds
     Time stopDiscTime = Seconds(50.0); // Time to stop the Prose discovery procedure in seconds
     Time discInterval = Seconds(2.0);  // Interval between two discovery announcements
+    std::string discModel = "ModelA";  // discovery model
 
     // NR parameters
     uint16_t numerologyBwpSl = 2;           // The numerology to be used in sidelink bandwidth part
@@ -178,6 +179,9 @@ main(int argc, char* argv[])
     cmd.AddValue("discInterval",
                  "Interval between two Prose discovery announcements in seconds",
                  discInterval);
+    cmd.AddValue("discModel",
+                 "Discovery model (ModelA for announcements and ModelB for requests/responses)",
+                 discModel);
     cmd.AddValue("numerologyBwpSl",
                  "The numerology to be used in sidelink bandwidth part",
                  numerologyBwpSl);
@@ -520,23 +524,41 @@ main(int argc, char* argv[])
         }
     }
 
+    NrSlUeProse::DiscoveryRole sender;
+    NrSlUeProse::DiscoveryRole receiver;
+    if (discModel == "ModelA")
+    {
+        sender = NrSlUeProse::Announcing;
+        receiver = NrSlUeProse::Monitoring;
+    }
+    else if (discModel == "ModelB")
+    {
+        sender = NrSlUeProse::Discoverer;
+        receiver = NrSlUeProse::Discoveree;
+    }
+    else
+    {
+        NS_FATAL_ERROR("Wrong discovery model! It should be either ModelA or ModelB");
+    }
+
     for (uint32_t i = 0; i < ueVoiceNetDev.GetN(); ++i)
     {
-        // Start announcing/monitoring
+        // Start announcing
         Simulator::Schedule(startDiscTime,
                             &NrSlProseHelper::StartDiscovery,
                             nrSlProseHelper,
                             ueVoiceNetDev.Get(i),
                             announcePayloads[ueVoiceNetDev.Get(i)],
                             announceDstL2IdsMap[ueVoiceNetDev.Get(i)],
-                            NrSlUeProse::Announcing);
+                            sender);
+        // Start monitoring
         Simulator::Schedule(startDiscTime,
                             &NrSlProseHelper::StartDiscovery,
                             nrSlProseHelper,
                             ueVoiceNetDev.Get(i),
                             monitorPayloads[ueVoiceNetDev.Get(i)],
                             monitorDstL2IdsMap[ueVoiceNetDev.Get(i)],
-                            NrSlUeProse::Monitoring);
+                            receiver);
 
         // Stop announcing
         Simulator::Schedule(stopDiscTime,
@@ -544,14 +566,14 @@ main(int argc, char* argv[])
                             nrSlProseHelper,
                             ueVoiceNetDev.Get(i),
                             announcePayloads[ueVoiceNetDev.Get(i)],
-                            NrSlUeProse::Announcing);
+                            sender);
         // Stop monitoring
         Simulator::Schedule(stopDiscTime,
                             &NrSlProseHelper::StopDiscovery,
                             nrSlProseHelper,
                             ueVoiceNetDev.Get(i),
                             monitorPayloads[ueVoiceNetDev.Get(i)],
-                            NrSlUeProse::Monitoring);
+                            receiver);
     }
 
     /*********************** End ProSe configuration ***************************/
