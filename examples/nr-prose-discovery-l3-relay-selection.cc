@@ -305,7 +305,9 @@ main(int argc, char* argv[])
     /*
      * Fix the random streams
      */
-    uint64_t stream = 1;
+    int64_t stream = 1;
+    const uint64_t streamIncrement = 1000;
+    // Use the first few stream numbers for node position
     Ptr<UniformRandomVariable> m_uniformRandomVariablePositionX =
         CreateObject<UniformRandomVariable>();
     m_uniformRandomVariablePositionX->SetStream(stream++);
@@ -327,6 +329,11 @@ main(int argc, char* argv[])
     }
     mobilityRemotes.SetPositionAllocator(positionAllocRemotes);
     mobilityRemotes.Install(remoteUeNodes);
+    stream += streamIncrement;
+    for (uint32_t i = 0; i < remoteUeNodes.GetN(); i++)
+    {
+        remoteUeNodes.Get(i)->GetObject<RandomWalk2dMobilityModel>()->AssignStreams(stream);
+    }
 
     MobilityHelper mobilityRelays;
     mobilityRelays.SetMobilityModel("ns3::RandomWalk2dMobilityModel",
@@ -341,6 +348,11 @@ main(int argc, char* argv[])
     }
     mobilityRelays.SetPositionAllocator(positionAllocRelays);
     mobilityRelays.Install(relayUeNodes);
+    stream += streamIncrement;
+    for (uint32_t i = 0; i < relayUeNodes.GetN(); i++)
+    {
+        relayUeNodes.Get(i)->GetObject<RandomWalk2dMobilityModel>()->AssignStreams(stream);
+    }
 
     for (uint32_t i = 0; i < gNbNodes.GetN(); ++i)
     {
@@ -451,7 +463,7 @@ main(int argc, char* argv[])
     bwp0->m_channelBandwidth = bandwidthCc0Bpw0;
     bwp0->m_lowerFrequency = bwp0->m_centralFrequency - bwp0->m_channelBandwidth / 2;
     bwp0->m_higherFrequency = bwp0->m_centralFrequency + bwp0->m_channelBandwidth / 2;
-    bwp0->m_scenario = BandwidthPartInfo::Scenario::UMa;
+    bwp0->m_scenario = BandwidthPartInfo::Scenario::UMa_LoS;
 
     cc0->AddBwp(std::move(bwp0));
 
@@ -461,7 +473,7 @@ main(int argc, char* argv[])
     bwp1->m_channelBandwidth = bandwidthCc0Bpw1;
     bwp1->m_lowerFrequency = bwp1->m_centralFrequency - bwp1->m_channelBandwidth / 2;
     bwp1->m_higherFrequency = bwp1->m_centralFrequency + bwp1->m_channelBandwidth / 2;
-    bwp1->m_scenario = BandwidthPartInfo::Scenario::RMa;
+    bwp1->m_scenario = BandwidthPartInfo::Scenario::RMa_LoS;
 
     cc0->AddBwp(std::move(bwp1));
 
@@ -742,11 +754,16 @@ main(int argc, char* argv[])
 
     /****************************** End SL Configuration ***********************/
 
-    stream += nrHelper->AssignStreams(enbNetDev, stream);
-    stream += nrHelper->AssignStreams(relayUeNetDev, stream);
-    stream += nrSlHelper->AssignStreams(relayUeNetDev, stream);
-    stream += nrHelper->AssignStreams(remoteUeNetDev, stream);
-    stream += nrSlHelper->AssignStreams(remoteUeNetDev, stream);
+    stream += streamIncrement;
+    nrHelper->AssignStreams(enbNetDev, stream);
+    stream += streamIncrement;
+    nrHelper->AssignStreams(relayUeNetDev, stream);
+    stream += streamIncrement;
+    nrSlHelper->AssignStreams(relayUeNetDev, stream);
+    stream += streamIncrement;
+    nrHelper->AssignStreams(remoteUeNetDev, stream);
+    stream += streamIncrement;
+    nrSlHelper->AssignStreams(remoteUeNetDev, stream);
 
     // create the internet and install the IP stack on the UEs
     // get SGW/PGW and create a single RemoteHost

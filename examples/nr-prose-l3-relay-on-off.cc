@@ -827,6 +827,7 @@ main(int argc, char* argv[])
     bwp0->m_channelBandwidth = bandwidthCc0Bpw0;
     bwp0->m_lowerFrequency = bwp0->m_centralFrequency - bwp0->m_channelBandwidth / 2;
     bwp0->m_higherFrequency = bwp0->m_centralFrequency + bwp0->m_channelBandwidth / 2;
+    bwp0->m_scenario = BandwidthPartInfo::Scenario::RMa_LoS;
 
     cc0->AddBwp(std::move(bwp0));
 
@@ -836,6 +837,7 @@ main(int argc, char* argv[])
     bwp1->m_channelBandwidth = bandwidthCc0Bpw1;
     bwp1->m_lowerFrequency = bwp1->m_centralFrequency - bwp1->m_channelBandwidth / 2;
     bwp1->m_higherFrequency = bwp1->m_centralFrequency + bwp1->m_channelBandwidth / 2;
+    bwp0->m_scenario = BandwidthPartInfo::Scenario::RMa_LoS;
 
     cc0->AddBwp(std::move(bwp1));
 
@@ -1097,12 +1099,18 @@ main(int argc, char* argv[])
 
     // Set random streams
     int64_t randomStream = 1;
-    randomStream += nrHelper->AssignStreams(enbNetDev, randomStream);
-    randomStream += nrHelper->AssignStreams(inNetUeNetDev, randomStream);
-    randomStream += nrHelper->AssignStreams(relayUeNetDev, randomStream);
-    randomStream += nrSlHelper->AssignStreams(relayUeNetDev, randomStream);
-    randomStream += nrHelper->AssignStreams(remoteUeNetDev, randomStream);
-    randomStream += nrSlHelper->AssignStreams(remoteUeNetDev, randomStream);
+    const uint64_t streamIncrement = 1000;
+    nrHelper->AssignStreams(enbNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrHelper->AssignStreams(inNetUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrHelper->AssignStreams(relayUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrSlHelper->AssignStreams(relayUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrHelper->AssignStreams(remoteUeNetDev, randomStream);
+    randomStream += streamIncrement;
+    nrSlHelper->AssignStreams(remoteUeNetDev, randomStream);
 
     // create the internet and install the IP stack on the UEs
     // get SGW/PGW and create a single RemoteHost
@@ -1400,6 +1408,8 @@ main(int argc, char* argv[])
     // Random variable to randomize a bit start times of the client applications
     // to avoid simulation artifacts of all the TX UEs transmitting at the same time.
     Ptr<UniformRandomVariable> startTimeRnd = CreateObject<UniformRandomVariable>();
+    randomStream += streamIncrement;
+    startTimeRnd->SetStream(randomStream);
     startTimeRnd->SetAttribute("Min", DoubleValue(0));
     startTimeRnd->SetAttribute("Max", DoubleValue(2.0)); // seconds
     std::string dataRateString = std::to_string(onOffDataRate) + "kb/s";
@@ -1457,17 +1467,17 @@ main(int argc, char* argv[])
         //-Server on UE
         PacketSinkHelper dlpacketSinkHelper("ns3::UdpSocketFactory",
                                             InetSocketAddress(Ipv4Address::GetAny(), dlPort));
-        ApplicationContainer dlSeverApp = dlpacketSinkHelper.Install(inNetUeNodes.Get(inIdx));
-        serverApps.Add(dlSeverApp);
+        ApplicationContainer dlServerApp = dlpacketSinkHelper.Install(inNetUeNodes.Get(inIdx));
+        serverApps.Add(dlServerApp);
 
 #ifdef HAS_NETSIMULYZER
         auto dlRxTput = CreateObject<netsimulyzer::ThroughputSink>(
             orchestrator,
             "Throughput - InNet UE - Rx - DL - Node " + std::to_string(nodeId));
         dlRxTput->GetSeries()->SetAttribute("Color", GetNextColor());
-        dlSeverApp.Get(0)->TraceConnect("RxWithSeqTsSize",
-                                        "rx",
-                                        MakeBoundCallback(&PacketTraceNetSimulyzer, dlRxTput));
+        dlServerApp.Get(0)->TraceConnect("RxWithSeqTsSize",
+                                         "rx",
+                                         MakeBoundCallback(&PacketTraceNetSimulyzer, dlRxTput));
         dlUeTputCollection->Add(dlRxTput->GetSeries());
         dlRxTputCollection->Add(dlRxTput->GetSeries());
 
@@ -1479,17 +1489,17 @@ main(int argc, char* argv[])
         dlRxDelay->SetAttribute("Connection", StringValue("None"));
         dlRxDelay->GetXAxis()->SetAttribute("Name", StringValue("Time (s)"));
         dlRxDelay->GetYAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
-        dlSeverApp.Get(0)->TraceConnectWithoutContext(
+        dlServerApp.Get(0)->TraceConnectWithoutContext(
             "RxWithSeqTsSize",
             MakeBoundCallback(&RxPacketTraceForDelayNetSimulyzer,
                               dlRxDelay,
-                              dlSeverApp.Get(0)->GetNode(),
+                              dlServerApp.Get(0)->GetNode(),
                               inNetIpv4AddressVector[inIdx]));
-        dlSeverApp.Get(0)->TraceConnectWithoutContext(
+        dlServerApp.Get(0)->TraceConnectWithoutContext(
             "RxWithSeqTsSize",
             MakeBoundCallback(&CdfTraceForDelayNetSimulyzer,
                               dlDelayEcdfInNet,
-                              dlSeverApp.Get(0)->GetNode(),
+                              dlServerApp.Get(0)->GetNode(),
                               inNetIpv4AddressVector[inIdx]));
 #endif
 
@@ -1546,17 +1556,17 @@ main(int argc, char* argv[])
         //-Server on Remtoe Host
         PacketSinkHelper ulPacketSinkHelper("ns3::UdpSocketFactory",
                                             InetSocketAddress(Ipv4Address::GetAny(), ulPort));
-        ApplicationContainer ulSeverApp = ulPacketSinkHelper.Install(remoteHost);
-        serverApps.Add(ulSeverApp);
+        ApplicationContainer ulServerApp = ulPacketSinkHelper.Install(remoteHost);
+        serverApps.Add(ulServerApp);
 
 #ifdef HAS_NETSIMULYZER
         auto ulRxTput = CreateObject<netsimulyzer::ThroughputSink>(
             orchestrator,
             "Throughput - InNet UE - Rx - UL - Node " + std::to_string(nodeId));
         ulRxTput->GetSeries()->SetAttribute("Color", GetNextColor());
-        ulSeverApp.Get(0)->TraceConnect("RxWithSeqTsSize",
-                                        "rx",
-                                        MakeBoundCallback(&PacketTraceNetSimulyzer, ulRxTput));
+        ulServerApp.Get(0)->TraceConnect("RxWithSeqTsSize",
+                                         "rx",
+                                         MakeBoundCallback(&PacketTraceNetSimulyzer, ulRxTput));
         ulUeTputCollection->Add(ulRxTput->GetSeries());
         ulRxTputCollection->Add(ulRxTput->GetSeries());
 
@@ -1568,20 +1578,19 @@ main(int argc, char* argv[])
         ulRxDelay->SetAttribute("Connection", StringValue("None"));
         ulRxDelay->GetXAxis()->SetAttribute("Name", StringValue("Time (s)"));
         ulRxDelay->GetYAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
-        ulSeverApp.Get(0)->TraceConnectWithoutContext(
+        ulServerApp.Get(0)->TraceConnectWithoutContext(
             "RxWithSeqTsSize",
             MakeBoundCallback(&RxPacketTraceForDelayNetSimulyzer,
                               ulRxDelay,
-                              ulSeverApp.Get(0)->GetNode(),
+                              ulServerApp.Get(0)->GetNode(),
                               remoteHostAddr));
-        ulSeverApp.Get(0)->TraceConnectWithoutContext(
+        ulServerApp.Get(0)->TraceConnectWithoutContext(
             "RxWithSeqTsSize",
             MakeBoundCallback(&CdfTraceForDelayNetSimulyzer,
                               ulDelayEcdfInNet,
-                              ulSeverApp.Get(0)->GetNode(),
+                              ulServerApp.Get(0)->GetNode(),
                               remoteHostAddr));
 #endif
-
         // UL bearer configuration
         Ptr<EpcTft> tftUl = Create<EpcTft>();
         EpcTft::PacketFilter pfUl;
@@ -1642,17 +1651,17 @@ main(int argc, char* argv[])
         //-Server on UE
         PacketSinkHelper dlpacketSinkHelper("ns3::UdpSocketFactory",
                                             InetSocketAddress(Ipv4Address::GetAny(), dlPort));
-        ApplicationContainer dlSeverApp = dlpacketSinkHelper.Install(remoteUeNodes.Get(rmIdx));
-        serverApps.Add(dlSeverApp);
+        ApplicationContainer dlServerApp = dlpacketSinkHelper.Install(remoteUeNodes.Get(rmIdx));
+        serverApps.Add(dlServerApp);
 
 #ifdef HAS_NETSIMULYZER
         auto dlRxTput = CreateObject<netsimulyzer::ThroughputSink>(
             orchestrator,
             "Throughput - Remote UE - Rx - DL - Node " + std::to_string(nodeId));
         dlRxTput->GetSeries()->SetAttribute("Color", GetNextColor());
-        dlSeverApp.Get(0)->TraceConnect("RxWithSeqTsSize",
-                                        "rx",
-                                        MakeBoundCallback(&PacketTraceNetSimulyzer, dlRxTput));
+        dlServerApp.Get(0)->TraceConnect("RxWithSeqTsSize",
+                                         "rx",
+                                         MakeBoundCallback(&PacketTraceNetSimulyzer, dlRxTput));
         dlUeTputCollection->Add(dlRxTput->GetSeries());
         dlRxTputCollection->Add(dlRxTput->GetSeries());
 
@@ -1664,17 +1673,17 @@ main(int argc, char* argv[])
         dlRxDelay->SetAttribute("Connection", StringValue("None"));
         dlRxDelay->GetXAxis()->SetAttribute("Name", StringValue("Time (s)"));
         dlRxDelay->GetYAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
-        dlSeverApp.Get(0)->TraceConnectWithoutContext(
+        dlServerApp.Get(0)->TraceConnectWithoutContext(
             "RxWithSeqTsSize",
             MakeBoundCallback(&RxPacketTraceForDelayNetSimulyzer,
                               dlRxDelay,
-                              dlSeverApp.Get(0)->GetNode(),
+                              dlServerApp.Get(0)->GetNode(),
                               remotesIpv4AddressVector[rmIdx]));
-        dlSeverApp.Get(0)->TraceConnectWithoutContext(
+        dlServerApp.Get(0)->TraceConnectWithoutContext(
             "RxWithSeqTsSize",
             MakeBoundCallback(&CdfTraceForDelayNetSimulyzer,
                               dlDelayEcdfRemotes,
-                              dlSeverApp.Get(0)->GetNode(),
+                              dlServerApp.Get(0)->GetNode(),
                               remotesIpv4AddressVector[rmIdx]));
 #endif
 
@@ -1731,17 +1740,17 @@ main(int argc, char* argv[])
         //-Server on Remote Host
         PacketSinkHelper ulPacketSinkHelper("ns3::UdpSocketFactory",
                                             InetSocketAddress(Ipv4Address::GetAny(), ulPort));
-        ApplicationContainer ulSeverApp = ulPacketSinkHelper.Install(remoteHost);
-        serverApps.Add(ulSeverApp);
+        ApplicationContainer ulServerApp = ulPacketSinkHelper.Install(remoteHost);
+        serverApps.Add(ulServerApp);
 
 #ifdef HAS_NETSIMULYZER
         auto ulRxTput = CreateObject<netsimulyzer::ThroughputSink>(
             orchestrator,
             "Throughput - Remote UE - Rx - UL - Node " + std::to_string(nodeId));
         ulRxTput->GetSeries()->SetAttribute("Color", GetNextColor());
-        ulSeverApp.Get(0)->TraceConnect("RxWithSeqTsSize",
-                                        "rx",
-                                        MakeBoundCallback(&PacketTraceNetSimulyzer, ulRxTput));
+        ulServerApp.Get(0)->TraceConnect("RxWithSeqTsSize",
+                                         "rx",
+                                         MakeBoundCallback(&PacketTraceNetSimulyzer, ulRxTput));
         ulUeTputCollection->Add(ulRxTput->GetSeries());
         ulRxTputCollection->Add(ulRxTput->GetSeries());
 
@@ -1753,17 +1762,17 @@ main(int argc, char* argv[])
         ulRxDelay->SetAttribute("Connection", StringValue("None"));
         ulRxDelay->GetXAxis()->SetAttribute("Name", StringValue("Time (s)"));
         ulRxDelay->GetYAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
-        ulSeverApp.Get(0)->TraceConnectWithoutContext(
+        ulServerApp.Get(0)->TraceConnectWithoutContext(
             "RxWithSeqTsSize",
             MakeBoundCallback(&RxPacketTraceForDelayNetSimulyzer,
                               ulRxDelay,
-                              ulSeverApp.Get(0)->GetNode(),
+                              ulServerApp.Get(0)->GetNode(),
                               remoteHostAddr));
-        ulSeverApp.Get(0)->TraceConnectWithoutContext(
+        ulServerApp.Get(0)->TraceConnectWithoutContext(
             "RxWithSeqTsSize",
             MakeBoundCallback(&CdfTraceForDelayNetSimulyzer,
                               ulDelayEcdfRemotes,
-                              ulSeverApp.Get(0)->GetNode(),
+                              ulServerApp.Get(0)->GetNode(),
                               remoteHostAddr));
 #endif
 
@@ -1829,17 +1838,17 @@ main(int argc, char* argv[])
             //-Server in UE
             PacketSinkHelper dlpacketSinkHelper("ns3::UdpSocketFactory",
                                                 InetSocketAddress(Ipv4Address::GetAny(), dlPort));
-            ApplicationContainer dlSeverApp = dlpacketSinkHelper.Install(relayUeNodes.Get(ryIdx));
-            serverApps.Add(dlSeverApp);
+            ApplicationContainer dlServerApp = dlpacketSinkHelper.Install(relayUeNodes.Get(ryIdx));
+            serverApps.Add(dlServerApp);
 
 #ifdef HAS_NETSIMULYZER
             auto dlRxTput = CreateObject<netsimulyzer::ThroughputSink>(
                 orchestrator,
                 "Throughput - Relay UE - Rx - DL - Node " + std::to_string(nodeId));
             dlRxTput->GetSeries()->SetAttribute("Color", GetNextColor());
-            dlSeverApp.Get(0)->TraceConnect("RxWithSeqTsSize",
-                                            "rx",
-                                            MakeBoundCallback(&PacketTraceNetSimulyzer, dlRxTput));
+            dlServerApp.Get(0)->TraceConnect("RxWithSeqTsSize",
+                                             "rx",
+                                             MakeBoundCallback(&PacketTraceNetSimulyzer, dlRxTput));
             dlUeTputCollection->Add(dlRxTput->GetSeries());
             dlRxTputCollection->Add(dlRxTput->GetSeries());
 
@@ -1851,17 +1860,17 @@ main(int argc, char* argv[])
             dlRxDelay->SetAttribute("Connection", StringValue("None"));
             dlRxDelay->GetXAxis()->SetAttribute("Name", StringValue("Time (s)"));
             dlRxDelay->GetYAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
-            dlSeverApp.Get(0)->TraceConnectWithoutContext(
+            dlServerApp.Get(0)->TraceConnectWithoutContext(
                 "RxWithSeqTsSize",
                 MakeBoundCallback(&RxPacketTraceForDelayNetSimulyzer,
                                   dlRxDelay,
-                                  dlSeverApp.Get(0)->GetNode(),
+                                  dlServerApp.Get(0)->GetNode(),
                                   relaysIpv4AddressVector[ryIdx]));
-            dlSeverApp.Get(0)->TraceConnectWithoutContext(
+            dlServerApp.Get(0)->TraceConnectWithoutContext(
                 "RxWithSeqTsSize",
                 MakeBoundCallback(&CdfTraceForDelayNetSimulyzer,
                                   dlDelayEcdfRelays,
-                                  dlSeverApp.Get(0)->GetNode(),
+                                  dlServerApp.Get(0)->GetNode(),
                                   relaysIpv4AddressVector[ryIdx]));
 #endif
 
@@ -1915,17 +1924,17 @@ main(int argc, char* argv[])
 
             PacketSinkHelper ulPacketSinkHelper("ns3::UdpSocketFactory",
                                                 InetSocketAddress(Ipv4Address::GetAny(), ulPort));
-            ApplicationContainer ulSeverApp = ulPacketSinkHelper.Install(remoteHost);
-            serverApps.Add(ulSeverApp);
+            ApplicationContainer ulServerApp = ulPacketSinkHelper.Install(remoteHost);
+            serverApps.Add(ulServerApp);
 
 #ifdef HAS_NETSIMULYZER
             auto ulRxTput = CreateObject<netsimulyzer::ThroughputSink>(
                 orchestrator,
                 "Throughput - Relay UE - Rx - UL - Node " + std::to_string(nodeId));
             ulRxTput->GetSeries()->SetAttribute("Color", GetNextColor());
-            ulSeverApp.Get(0)->TraceConnect("RxWithSeqTsSize",
-                                            "rx",
-                                            MakeBoundCallback(&PacketTraceNetSimulyzer, ulRxTput));
+            ulServerApp.Get(0)->TraceConnect("RxWithSeqTsSize",
+                                             "rx",
+                                             MakeBoundCallback(&PacketTraceNetSimulyzer, ulRxTput));
             ulUeTputCollection->Add(ulRxTput->GetSeries());
             ulRxTputCollection->Add(ulRxTput->GetSeries());
 
@@ -1937,17 +1946,17 @@ main(int argc, char* argv[])
             ulRxDelay->SetAttribute("Connection", StringValue("None"));
             ulRxDelay->GetXAxis()->SetAttribute("Name", StringValue("Time (s)"));
             ulRxDelay->GetYAxis()->SetAttribute("Name", StringValue("Packet delay (ms)"));
-            ulSeverApp.Get(0)->TraceConnectWithoutContext(
+            ulServerApp.Get(0)->TraceConnectWithoutContext(
                 "RxWithSeqTsSize",
                 MakeBoundCallback(&RxPacketTraceForDelayNetSimulyzer,
                                   ulRxDelay,
-                                  ulSeverApp.Get(0)->GetNode(),
+                                  ulServerApp.Get(0)->GetNode(),
                                   remoteHostAddr));
-            ulSeverApp.Get(0)->TraceConnectWithoutContext(
+            ulServerApp.Get(0)->TraceConnectWithoutContext(
                 "RxWithSeqTsSize",
                 MakeBoundCallback(&CdfTraceForDelayNetSimulyzer,
                                   ulDelayEcdfRelays,
-                                  ulSeverApp.Get(0)->GetNode(),
+                                  ulServerApp.Get(0)->GetNode(),
                                   remoteHostAddr));
 #endif
 
@@ -1969,6 +1978,18 @@ main(int argc, char* argv[])
     clientApps.Stop(simTime);
     serverApps.Start(Seconds(1.0));
     serverApps.Stop(simTime);
+
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(gNbNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(inNetUeNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(relayUeNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(remoteUeNodes, randomStream);
+    randomStream += streamIncrement;
+    ApplicationHelper::AssignStreamsToAllApps(remoteHostContainer, randomStream);
+
     /******************** End Application configuration ************************/
 
     /************ SL traces database setup *************************************/
