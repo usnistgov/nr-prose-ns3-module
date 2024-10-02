@@ -214,8 +214,8 @@ NrSlDiscoveryTrace::DiscoveryTrace(uint32_t senderL2Id,
     {
     case NrSlDiscoveryHeader::DISC_RELAY_ANNOUNCEMENT: // UE-to-Network Relay Discovery Announcement
                                                        // in model A
-    case NrSlDiscoveryHeader::DISC_RELAY_RESPONSE: // UE-to-Network Relay Discovery Response in
-                                                   // model B
+    case NrSlDiscoveryHeader::DISC_RELAY_RESPONSE:     // UE-to-Network Relay Discovery Response in
+                                                       // model B
     {
         // write fields, include spare (0) as the last field
         outFile << discMsg.GetRelayServiceCode() << ";" << discMsg.GetInfo() << ";"

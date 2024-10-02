@@ -123,7 +123,7 @@ difference is the assigned role for each UE (relay or remote).
                         relayCode,
                         relayDstL2Id,
                         NrSlUeProse::ModelB,
-						NrSlUeProse::RelayUE);
+                        NrSlUeProse::RelayUE);
 
    Simulator::Schedule (startDiscTime,
                         &NrSlProseHelper::StartRelayDiscovery,

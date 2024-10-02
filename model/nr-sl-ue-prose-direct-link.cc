@@ -364,7 +364,7 @@ NrSlUeProseDirectLink::ProcessDirectLinkEstablishmentRequest(Ptr<Packet> packet)
     case NrSlUeProseDirectLink::RELEASED:
         // Special case:
         //(Re)Connection establishment between a pair of UEs who performed the direct link release
-        //process before
+        // process before
 
         // Change of state and notify ProSe layer about change of state
         SwitchToState(ESTABLISHING);
