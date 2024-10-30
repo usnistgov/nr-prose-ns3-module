@@ -1,44 +1,13 @@
-/* -*-  Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil; -*- */
-/*
- * NIST-developed software is provided by NIST as a public
- * service. You may use, copy and distribute copies of the software in
- * any medium, provided that you keep intact this entire notice. You
- * may improve, modify and create derivative works of the software or
- * any portion of the software, and you may copy and distribute such
- * modifications or works. Modified works should carry a notice
- * stating that you changed the software and should note the date and
- * nature of any such change. Please explicitly acknowledge the
- * National Institute of Standards and Technology as the source of the
- * software.
- *
- * NIST-developed software is expressly provided "AS IS." NIST MAKES
- * NO WARRANTY OF ANY KIND, EXPRESS, IMPLIED, IN FACT OR ARISING BY
- * OPERATION OF LAW, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
- * WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
- * NON-INFRINGEMENT AND DATA ACCURACY. NIST NEITHER REPRESENTS NOR
- * WARRANTS THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED
- * OR ERROR-FREE, OR THAT ANY DEFECTS WILL BE CORRECTED. NIST DOES NOT
- * WARRANT OR MAKE ANY REPRESENTATIONS REGARDING THE USE OF THE
- * SOFTWARE OR THE RESULTS THEREOF, INCLUDING BUT NOT LIMITED TO THE
- * CORRECTNESS, ACCURACY, RELIABILITY, OR USEFULNESS OF THE SOFTWARE.
- *
- * You are solely responsible for determining the appropriateness of
- * using and distributing the software and you assume all risks
- * associated with its use, including but not limited to the risks and
- * costs of program errors, compliance with applicable laws, damage to
- * or loss of data, programs or equipment, and the unavailability or
- * interruption of operation. This software is not intended to be used
- * in any situation where a failure could cause risk of injury or
- * damage to property. The software developed by NIST employees is not
- * subject to copyright protection within the United States.
- */
+//
+// SPDX-License-Identifier: NIST-Software
+//
 
 /**
  * \file nr-prose-unicast-l3-relay.cc
  * \ingroup examples
  *
  * \brief Basic scenario with some UEs doing in-network communication, some UEs
- *        doing PoSe unicast communication over SL and also in-network
+ *        doing ProSe unicast communication over SL and also in-network
  *        communication through a L3 UE-to-Network (U2N) relay UE.
  *
  * Channel configuration:
@@ -52,50 +21,51 @@
  * other bandwidth part is used for SL communication between UEs using SL.
  *
  * Topology:
- * The scenario is composed of one gNB and four UEs. Two of the UEs (UE0 and
- * UE1) are attached to the gNB and the other two UEs (UE2 and UE3) are
- * out-of-network. UE1 is configured to serve as a L3 UE-to-Network (U2N)
+ * The scenario is composed of one gNB and four UEs. The node ID of the
+ * gNB is 0, and IDs (and IMSIs) of the UEs are 1-4.  Two of the UEs (UE1 and
+ * UE2) are attached to the gNB and the other two UEs (UE3 and UE4) are
+ * out-of-network. UE2 is configured to serve as a L3 UE-to-Network (U2N)
  * relay.
  *
  *        -  gNB              (0.0, 30.0, 10.0)
  *        |
  *   20 m |
- *        -  UE1 UE0          (0.0, 10.0, 1.5) (1.0, 10.0, 1.5)
+ *        -  UE1 UE2          (0.0, 10.0, 1.5) (1.0, 10.0, 1.5)
  *   10 m |       |
- *        -  UE2  |  UE3      (0.0, 0.0, 1.5) (2.0, 0.0, 1.5)
+ *        -  UE3  |  UE4      (0.0, 0.0, 1.5) (2.0, 0.0, 1.5)
  *            |---|---|
  *             1 m 1 m
  *            |-------|
  *               2 m
  *
  * ProSe Unicast:
- * UE2 and UE3 will start the establishment of the ProSe unicast direct links
+ * UE3 and UE4 will start the establishment of the ProSe unicast direct links
  * before the start of the unicast traffic. The configuration is the following:
  *     Link     | Initiating UE  |   Target UE
  * ---------------------------------------------
- * UE2 <-> UE3  |      UE2       |     UE3
+ * UE3 <-> UE4  |      UE3       |     UE4
  *
  * L3 UE-to-Network relay:
- * UE2 and UE3 will start the establishment of the L3 U2N relay connection
+ * UE3 and UE4 will start the establishment of the L3 U2N relay connection
  * before the start of the in-network traffic. This will internally start the
  * establishment of the corresponding ProSe unicast direct links. The
  * configuration is the following:
  *              |   Remote UE    |  Relay UE
  *     Link     |(Initiating UE) |(Target UE)
  * ---------------------------------------------
- * UE2 <-> UE1  |       UE2      |    UE1
- * UE3 <-> UE1  |       UE3      |    UE1
+ * UE3 <-> UE2  |       UE3      |    UE2
+ * UE4 <-> UE2  |       UE4      |    UE2
  *
  *
  * Traffic:
- * There are two CBR traffic flows concerning the in-network UEs (UE0 and UE1),
+ * There are two CBR traffic flows concerning the in-network UEs (UE1 and UE2),
  * one from a Remote Host in the internet towards each in-network UE (DL) and
  * one from the in-network UEs towards the Remote Host (UL). Additionally, two
  * CBR traffic flows with the same configuration are configured for each
- * out-of-network UE (UE2, and UE3) to be served when they connect to the U2N
- * relay UE (UE1).
+ * out-of-network UE (UE3 and UE4) to be served when they connect to the U2N
+ * relay UE (UE2).
  * Regarding SL unicast only traffic, two CBR traffic flows involve the
- * out-of-network UEs (UE2, and UE3), one on each direction of each established
+ * out-of-network UEs (UE3 and UE4), one on each direction of each established
  * unicast direct link.
  *
  * Output:
@@ -125,7 +95,6 @@ $ ./ns3 run "nr-prose-unicast-l3-relay --Help"
 #include "ns3/flow-monitor-module.h"
 #include "ns3/internet-apps-module.h"
 #include "ns3/internet-module.h"
-#include "ns3/lte-module.h"
 #include "ns3/network-module.h"
 #include "ns3/nr-module.h"
 #include "ns3/nr-prose-module.h"
@@ -321,7 +290,7 @@ main(int argc, char* argv[])
     NS_ABORT_IF(numBands < 1);
 
     // Setup large enough buffer size to avoid overflow
-    Config::SetDefault("ns3::LteRlcUm::MaxTxBufferSize", UintegerValue(999999999));
+    Config::SetDefault("ns3::NrRlcUm::MaxTxBufferSize", UintegerValue(999999999));
 
     // create gNBs and in-network UEs, configure positions
     NodeContainer gNbNodes;
@@ -513,7 +482,7 @@ main(int argc, char* argv[])
     BandwidthPartInfoPtrVector inNetBwp;
     inNetBwp.insert(inNetBwp.end(), band.GetBwpAt(/*CC*/ 0, bwpIdInNet));
     NetDeviceContainer inNetUeNetDev = nrHelper->InstallUeDevice(inNetUeNodes, inNetBwp);
-    NetDeviceContainer enbNetDev = nrHelper->InstallGnbDevice(gNbNodes, inNetBwp);
+    NetDeviceContainer gnbNetDev = nrHelper->InstallGnbDevice(gNbNodes, inNetBwp);
 
     // SL BWP manager configuration
     uint8_t bwpIdSl = 1;
@@ -522,13 +491,19 @@ main(int argc, char* argv[])
 
     // For relays, we need a special configuration with one Bwp configured
     // with a Mac of type NrUeMac, and one Bwp configured with a Mac of type
-    // NrSlUeMac.  Use a variation of InstallUeDevice to configure that, and
+    // NrSlUeMac.  Similarly, we need one Phy of NrUePhy and one of NrSlUePhy.
+    // Use a variation of InstallUeDevice to configure that, and
     // pass in a vector of object factories to account for the different Macs
     std::vector<ObjectFactory> nrUeMacFactories;
+    std::vector<ObjectFactory> nrUePhyFactories;
     ObjectFactory nrUeMacFactory;
+    ObjectFactory nrUePhyFactory;
     nrUeMacFactory.SetTypeId(NrUeMac::GetTypeId());
     nrUeMacFactories.emplace_back(nrUeMacFactory);
+    nrUePhyFactory.SetTypeId(NrUePhy::GetTypeId());
+    nrUePhyFactories.emplace_back(nrUePhyFactory);
     ObjectFactory nrSlUeMacFactory;
+    ObjectFactory nrSlUePhyFactory;
     nrSlUeMacFactory.SetTypeId(NrSlUeMac::GetTypeId());
     nrSlUeMacFactory.Set("EnableSensing", BooleanValue(false));
     nrSlUeMacFactory.Set("T1", UintegerValue(2));
@@ -536,47 +511,26 @@ main(int argc, char* argv[])
     nrSlUeMacFactory.Set("NumHarqProcess", UintegerValue(255));
     nrSlUeMacFactory.Set("SlThresPsschRsrp", IntegerValue(-128));
     nrUeMacFactories.emplace_back(nrSlUeMacFactory);
+    nrSlUePhyFactory.SetTypeId(NrSlUePhy::GetTypeId());
+    nrUePhyFactories.emplace_back(nrSlUePhyFactory);
 
     // Install both BWPs on U2N relays
     NetDeviceContainer relayUeNetDev =
-        nrHelper->InstallUeDevice(relayUeNodes, allBwps, nrUeMacFactories);
+        nrHelper->InstallUeDevice(relayUeNodes, allBwps, nrUeMacFactories, nrUePhyFactories);
 
-    // SL UE MAC configuration (for non relay UEs)
-    nrHelper->SetUeMacTypeId(NrSlUeMac::GetTypeId());
-    nrHelper->SetUeMacAttribute("EnableSensing", BooleanValue(false));
-    nrHelper->SetUeMacAttribute("T1", UintegerValue(2));
-    nrHelper->SetUeMacAttribute("ActivePoolId", UintegerValue(0));
-    nrHelper->SetUeMacAttribute("NumHarqProcess", UintegerValue(255));
-    nrHelper->SetUeMacAttribute("SlThresPsschRsrp", IntegerValue(-128));
-
-    // Install both BWPs on SL-only UEs
-    // This was needed to avoid errors with bwpId and vector indexes during device installation
-    NetDeviceContainer slUeNetDev = nrHelper->InstallUeDevice(slUeNodes, allBwps);
     std::set<uint8_t> slBwpIdContainer;
     slBwpIdContainer.insert(bwpIdInNet);
     slBwpIdContainer.insert(bwpIdSl);
 
     // Setup BWPs numerology, Tx Power and pattern
-    nrHelper->GetGnbPhy(enbNetDev.Get(0), 0)
+    nrHelper->GetGnbPhy(gnbNetDev.Get(0), 0)
         ->SetAttribute("Numerology", UintegerValue(numerologyCc0Bwp0));
-    nrHelper->GetGnbPhy(enbNetDev.Get(0), 0)->SetAttribute("Pattern", StringValue(pattern));
-    nrHelper->GetGnbPhy(enbNetDev.Get(0), 0)->SetAttribute("TxPower", DoubleValue(gNBtotalTxPower));
+    nrHelper->GetGnbPhy(gnbNetDev.Get(0), 0)->SetAttribute("Pattern", StringValue(pattern));
+    nrHelper->GetGnbPhy(gnbNetDev.Get(0), 0)->SetAttribute("TxPower", DoubleValue(gNBtotalTxPower));
 
-    for (auto it = enbNetDev.Begin(); it != enbNetDev.End(); ++it)
+    for (auto it = gnbNetDev.Begin(); it != gnbNetDev.End(); ++it)
     {
         DynamicCast<NrGnbNetDevice>(*it)->UpdateConfig();
-    }
-    for (auto it = inNetUeNetDev.Begin(); it != inNetUeNetDev.End(); ++it)
-    {
-        DynamicCast<NrUeNetDevice>(*it)->UpdateConfig();
-    }
-    for (auto it = relayUeNetDev.Begin(); it != relayUeNetDev.End(); ++it)
-    {
-        DynamicCast<NrUeNetDevice>(*it)->UpdateConfig();
-    }
-    for (auto it = slUeNetDev.Begin(); it != slUeNetDev.End(); ++it)
-    {
-        DynamicCast<NrUeNetDevice>(*it)->UpdateConfig();
     }
 
     /* Create NrSlHelper which will configure the UEs protocol stack to be ready to
@@ -584,7 +538,18 @@ main(int argc, char* argv[])
      */
     Ptr<NrSlHelper> nrSlHelper = CreateObject<NrSlHelper>();
     nrSlHelper->SetEpcHelper(epcHelper);
+    nrSlHelper->SetUeBwpManagerAlgorithmAttribute("GBR_MC_PUSH_TO_TALK", UintegerValue(bwpIdSl));
 
+    // SL UE MAC configuration (for non relay UEs)
+    nrSlHelper->SetUeMacAttribute("EnableSensing", BooleanValue(false));
+    nrSlHelper->SetUeMacAttribute("T1", UintegerValue(2));
+    nrSlHelper->SetUeMacAttribute("ActivePoolId", UintegerValue(0));
+    nrSlHelper->SetUeMacAttribute("NumHarqProcess", UintegerValue(255));
+    nrSlHelper->SetUeMacAttribute("SlThresPsschRsrp", IntegerValue(-128));
+
+    // Install both BWPs on SL-only UEs
+    // This was needed to avoid errors with bwpId and vector indexes during device installation
+    NetDeviceContainer slUeNetDev = nrSlHelper->InstallUeDevice(slUeNodes, allBwps);
     // Set the SL error model and AMC
     std::string errorModel = "ns3::NrEesmIrT1";
     nrSlHelper->SetSlErrorModel(errorModel);
@@ -605,7 +570,7 @@ main(int argc, char* argv[])
     /***SL IEs configuration **/
 
     // SlResourcePoolNr IE
-    LteRrcSap::SlResourcePoolNr slResourcePoolNr;
+    NrRrcSap::SlResourcePoolNr slResourcePoolNr;
     // get it from pool factory
     Ptr<NrSlCommResourcePoolFactory> ptrFactory = Create<NrSlCommResourcePoolFactory>();
     // Configure specific parameters of interest:
@@ -619,26 +584,26 @@ main(int argc, char* argv[])
     std::list<uint16_t> resourceReservePeriodList = {0, 100}; // in ms
     ptrFactory->SetSlResourceReservePeriodList(resourceReservePeriodList);
     // Once parameters are configured, we can create the pool
-    LteRrcSap::SlResourcePoolNr pool = ptrFactory->CreatePool();
+    NrRrcSap::SlResourcePoolNr pool = ptrFactory->CreatePool();
     slResourcePoolNr = pool;
 
     // Configure the SlResourcePoolConfigNr IE, which holds a pool and its id
-    LteRrcSap::SlResourcePoolConfigNr slresoPoolConfigNr;
+    NrRrcSap::SlResourcePoolConfigNr slresoPoolConfigNr;
     slresoPoolConfigNr.haveSlResourcePoolConfigNr = true;
     // Pool id, ranges from 0 to 15
     uint16_t poolId = 0;
-    LteRrcSap::SlResourcePoolIdNr slResourcePoolIdNr;
+    NrRrcSap::SlResourcePoolIdNr slResourcePoolIdNr;
     slResourcePoolIdNr.id = poolId;
     slresoPoolConfigNr.slResourcePoolId = slResourcePoolIdNr;
     slresoPoolConfigNr.slResourcePool = slResourcePoolNr;
 
     // Configure the SlBwpPoolConfigCommonNr IE, which holds an array of pools
-    LteRrcSap::SlBwpPoolConfigCommonNr slBwpPoolConfigCommonNr;
+    NrRrcSap::SlBwpPoolConfigCommonNr slBwpPoolConfigCommonNr;
     // Array for pools, we insert the pool in the array as per its poolId
     slBwpPoolConfigCommonNr.slTxPoolSelectedNormal[slResourcePoolIdNr.id] = slresoPoolConfigNr;
 
     // Configure the BWP IE
-    LteRrcSap::Bwp bwp;
+    NrRrcSap::Bwp bwp;
     bwp.numerology = numerologyCc0Bwp1;
     bwp.symbolsPerSlots = 14;
     bwp.rbPerRbg = 1;
@@ -646,13 +611,13 @@ main(int argc, char* argv[])
         bandwidthCc0Bpw1 / 1000 / 100; // SL configuration requires BW in Multiple of 100 KHz
 
     // Configure the SlBwpGeneric IE
-    LteRrcSap::SlBwpGeneric slBwpGeneric;
+    NrRrcSap::SlBwpGeneric slBwpGeneric;
     slBwpGeneric.bwp = bwp;
-    slBwpGeneric.slLengthSymbols = LteRrcSap::GetSlLengthSymbolsEnum(14);
-    slBwpGeneric.slStartSymbol = LteRrcSap::GetSlStartSymbolEnum(0);
+    slBwpGeneric.slLengthSymbols = NrRrcSap::GetSlLengthSymbolsEnum(14);
+    slBwpGeneric.slStartSymbol = NrRrcSap::GetSlStartSymbolEnum(0);
 
     // Configure the SlBwpConfigCommonNr IE
-    LteRrcSap::SlBwpConfigCommonNr slBwpConfigCommonNr;
+    NrRrcSap::SlBwpConfigCommonNr slBwpConfigCommonNr;
     slBwpConfigCommonNr.haveSlBwpGeneric = true;
     slBwpConfigCommonNr.slBwpGeneric = slBwpGeneric;
     slBwpConfigCommonNr.haveSlBwpPoolConfigCommonNr = true;
@@ -660,7 +625,7 @@ main(int argc, char* argv[])
 
     // Configure the SlFreqConfigCommonNr IE, which holds the array to store
     // the configuration of all Sidelink BWP (s).
-    LteRrcSap::SlFreqConfigCommonNr slFreConfigCommonNr;
+    NrRrcSap::SlFreqConfigCommonNr slFreConfigCommonNr;
     // Array for BWPs. Here we will iterate over the BWPs, which
     // we want to use for SL.
     for (const auto& it : slBwpIdContainer)
@@ -670,21 +635,21 @@ main(int argc, char* argv[])
     }
 
     // Configure the TddUlDlConfigCommon IE
-    LteRrcSap::TddUlDlConfigCommon tddUlDlConfigCommon;
+    NrRrcSap::TddUlDlConfigCommon tddUlDlConfigCommon;
     tddUlDlConfigCommon.tddPattern = pattern;
 
     // Configure the SlPreconfigGeneralNr IE
-    LteRrcSap::SlPreconfigGeneralNr slPreconfigGeneralNr;
+    NrRrcSap::SlPreconfigGeneralNr slPreconfigGeneralNr;
     slPreconfigGeneralNr.slTddConfig = tddUlDlConfigCommon;
 
     // Configure the SlUeSelectedConfig IE
-    LteRrcSap::SlUeSelectedConfig slUeSelectedPreConfig;
+    NrRrcSap::SlUeSelectedConfig slUeSelectedPreConfig;
     slUeSelectedPreConfig.slProbResourceKeep = 0;
     // Configure the SlPsschTxParameters IE
-    LteRrcSap::SlPsschTxParameters psschParams;
+    NrRrcSap::SlPsschTxParameters psschParams;
     psschParams.slMaxTxTransNumPssch = 5;
     // Configure the SlPsschTxConfigList IE
-    LteRrcSap::SlPsschTxConfigList pscchTxConfigList;
+    NrRrcSap::SlPsschTxConfigList pscchTxConfigList;
     pscchTxConfigList.slPsschTxParameters[0] = psschParams;
     slUeSelectedPreConfig.slPsschTxConfigList = pscchTxConfigList;
 
@@ -692,7 +657,7 @@ main(int argc, char* argv[])
      * Finally, configure the SidelinkPreconfigNr This is the main structure
      * that needs to be communicated to NrSlUeRrc class
      */
-    LteRrcSap::SidelinkPreconfigNr slPreConfigNr;
+    NrRrcSap::SidelinkPreconfigNr slPreConfigNr;
     slPreConfigNr.slPreconfigGeneral = slPreconfigGeneralNr;
     slPreConfigNr.slUeSelectedPreConfig = slUeSelectedPreConfig;
     slPreConfigNr.slPreconfigFreqInfoList[0] = slFreConfigCommonNr;
@@ -704,10 +669,10 @@ main(int argc, char* argv[])
     // For U2N relay UEs
     // We need to modify some parameters to configure *only* BWP1 on the relay for
     //  SL and avoid MAC problems
-    LteRrcSap::SlFreqConfigCommonNr slFreConfigCommonNrRelay;
+    NrRrcSap::SlFreqConfigCommonNr slFreConfigCommonNrRelay;
     slFreConfigCommonNrRelay.slBwpList[bwpIdSl] = slBwpConfigCommonNr;
 
-    LteRrcSap::SidelinkPreconfigNr slPreConfigNrRelay;
+    NrRrcSap::SidelinkPreconfigNr slPreConfigNrRelay;
     slPreConfigNrRelay.slPreconfigGeneral = slPreconfigGeneralNr;
     slPreConfigNrRelay.slUeSelectedPreConfig = slUeSelectedPreConfig;
     slPreConfigNrRelay.slPreconfigFreqInfoList[0] = slFreConfigCommonNrRelay;
@@ -719,7 +684,7 @@ main(int argc, char* argv[])
     // Set random streams
     int64_t randomStream = 1;
     const uint64_t streamIncrement = 1000;
-    nrHelper->AssignStreams(enbNetDev, randomStream);
+    nrHelper->AssignStreams(gnbNetDev, randomStream);
     randomStream += streamIncrement;
     nrHelper->AssignStreams(inNetUeNetDev, randomStream);
     randomStream += streamIncrement;
@@ -774,7 +739,7 @@ main(int argc, char* argv[])
     }
 
     // Attach in-network UEs to the closest gNB
-    nrHelper->AttachToClosestEnb(inNetUeNetDev, enbNetDev);
+    nrHelper->AttachToClosestGnb(inNetUeNetDev, gnbNetDev);
 
     // Configure U2N relay UEs
     internet.Install(relayUeNodes);
@@ -797,7 +762,7 @@ main(int argc, char* argv[])
     }
 
     // Attach U2N relay UEs to the closest gNB
-    nrHelper->AttachToClosestEnb(relayUeNetDev, enbNetDev);
+    nrHelper->AttachToClosestGnb(relayUeNetDev, gnbNetDev);
 
     // Configure out-of-network UEs
     internet.Install(slUeNodes);
@@ -888,12 +853,12 @@ main(int argc, char* argv[])
     providedRelaySCs.insert(relayServiceCode);
 
     //-Configure the UL data radio bearer that the relay UE will use for U2N relaying traffic
-    Ptr<EpcTft> tftRelay = Create<EpcTft>();
-    EpcTft::PacketFilter pfRelay;
+    Ptr<NrEpcTft> tftRelay = Create<NrEpcTft>();
+    NrEpcTft::PacketFilter pfRelay;
     tftRelay->Add(pfRelay);
-    enum EpsBearer::Qci qciRelay;
-    qciRelay = EpsBearer::GBR_CONV_VOICE;
-    EpsBearer bearerRelay(qciRelay);
+    enum NrEpsBearer::Qci qciRelay;
+    qciRelay = NrEpsBearer::GBR_CONV_VOICE;
+    NrEpsBearer bearerRelay(qciRelay);
 
     // Apply the configuration on the devices acting as relay UEs
     nrSlProseHelper->ConfigureL3UeToNetworkRelay(relayUeNetDev,
@@ -963,17 +928,17 @@ main(int argc, char* argv[])
                   << " start time: " << inNetTrafficStartTime << " s, end time: " << simTime << " s"
                   << std::endl;
 
-        Ptr<EpcTft> tftDl = Create<EpcTft>();
-        EpcTft::PacketFilter pfDl;
+        Ptr<NrEpcTft> tftDl = Create<NrEpcTft>();
+        NrEpcTft::PacketFilter pfDl;
         pfDl.localPortStart = dlPort;
         pfDl.localPortEnd = dlPort;
         ++dlPort;
         tftDl->Add(pfDl);
 
-        enum EpsBearer::Qci qDl;
-        qDl = EpsBearer::GBR_CONV_VOICE;
+        enum NrEpsBearer::Qci qDl;
+        qDl = NrEpsBearer::GBR_CONV_VOICE;
 
-        EpsBearer bearerDl(qDl);
+        NrEpsBearer bearerDl(qDl);
         nrHelper->ActivateDedicatedEpsBearer(inNetUeNetDev.Get(u), bearerDl, tftDl);
 
         // UL traffic
@@ -991,17 +956,17 @@ main(int argc, char* argv[])
                   << " start time: " << inNetTrafficStartTime << " s, end time: " << simTime << " s"
                   << std::endl;
 
-        Ptr<EpcTft> tftUl = Create<EpcTft>();
-        EpcTft::PacketFilter pfUl;
+        Ptr<NrEpcTft> tftUl = Create<NrEpcTft>();
+        NrEpcTft::PacketFilter pfUl;
         pfUl.remotePortStart = ulPort;
         pfUl.remotePortEnd = ulPort;
         ++ulPort;
         tftUl->Add(pfUl);
 
-        enum EpsBearer::Qci qUl;
+        enum NrEpsBearer::Qci qUl;
 
-        qUl = EpsBearer::GBR_CONV_VOICE;
-        EpsBearer bearerUl(qUl);
+        qUl = NrEpsBearer::GBR_CONV_VOICE;
+        NrEpsBearer bearerUl(qUl);
         nrHelper->ActivateDedicatedEpsBearer(inNetUeNetDev.Get(u), bearerUl, tftUl);
     }
 
@@ -1023,17 +988,17 @@ main(int argc, char* argv[])
                   << dlPort << " start time: " << inNetTrafficStartTime
                   << " s, end time: " << simTime << " s" << std::endl;
 
-        Ptr<EpcTft> tftDl = Create<EpcTft>();
-        EpcTft::PacketFilter pfDl;
+        Ptr<NrEpcTft> tftDl = Create<NrEpcTft>();
+        NrEpcTft::PacketFilter pfDl;
         pfDl.localPortStart = dlPort;
         pfDl.localPortEnd = dlPort;
         ++dlPort;
         tftDl->Add(pfDl);
 
-        enum EpsBearer::Qci qDl;
-        qDl = EpsBearer::GBR_CONV_VOICE;
+        enum NrEpsBearer::Qci qDl;
+        qDl = NrEpsBearer::GBR_CONV_VOICE;
 
-        EpsBearer bearerDl(qDl);
+        NrEpsBearer bearerDl(qDl);
         nrHelper->ActivateDedicatedEpsBearer(relayUeNetDev.Get(u), bearerDl, tftDl);
 
         // UL traffic
@@ -1051,18 +1016,18 @@ main(int argc, char* argv[])
                   << ulPort << " start time: " << inNetTrafficStartTime
                   << " s, end time: " << simTime << " s" << std::endl;
 
-        Ptr<EpcTft> tftUl = Create<EpcTft>();
-        EpcTft::PacketFilter pfUl;
+        Ptr<NrEpcTft> tftUl = Create<NrEpcTft>();
+        NrEpcTft::PacketFilter pfUl;
         pfUl.remoteAddress = remoteHostAddr;
         pfUl.remotePortStart = ulPort;
         pfUl.remotePortEnd = ulPort;
         ++ulPort;
         tftUl->Add(pfUl);
 
-        enum EpsBearer::Qci qUl;
+        enum NrEpsBearer::Qci qUl;
 
-        qUl = EpsBearer::GBR_CONV_VOICE;
-        EpsBearer bearerUl(qUl);
+        qUl = NrEpsBearer::GBR_CONV_VOICE;
+        NrEpsBearer bearerUl(qUl);
         nrHelper->ActivateDedicatedEpsBearer(relayUeNetDev.Get(u), bearerUl, tftUl);
     }
 
@@ -1084,17 +1049,17 @@ main(int argc, char* argv[])
                   << dlPort << " start time: " << inNetTrafficStartTime
                   << " s, end time: " << simTime << " s" << std::endl;
 
-        Ptr<EpcTft> tftDl = Create<EpcTft>();
-        EpcTft::PacketFilter pfDl;
+        Ptr<NrEpcTft> tftDl = Create<NrEpcTft>();
+        NrEpcTft::PacketFilter pfDl;
         pfDl.localPortStart = dlPort;
         pfDl.localPortEnd = dlPort;
         ++dlPort;
         tftDl->Add(pfDl);
 
-        enum EpsBearer::Qci qDl;
-        qDl = EpsBearer::GBR_CONV_VOICE;
+        enum NrEpsBearer::Qci qDl;
+        qDl = NrEpsBearer::GBR_CONV_VOICE;
 
-        EpsBearer bearerDl(qDl);
+        NrEpsBearer bearerDl(qDl);
         nrHelper->ActivateDedicatedEpsBearer(slUeNetDev.Get(u), bearerDl, tftDl);
 
         // UL traffic
@@ -1112,18 +1077,18 @@ main(int argc, char* argv[])
                   << ulPort << " start time: " << inNetTrafficStartTime
                   << " s, end time: " << simTime << " s" << std::endl;
 
-        Ptr<EpcTft> tftUl = Create<EpcTft>();
-        EpcTft::PacketFilter pfUl;
+        Ptr<NrEpcTft> tftUl = Create<NrEpcTft>();
+        NrEpcTft::PacketFilter pfUl;
         pfUl.remoteAddress = remoteHostAddr; // IMPORTANT!!!
         pfUl.remotePortStart = ulPort;
         pfUl.remotePortEnd = ulPort;
         ++ulPort;
         tftUl->Add(pfUl);
 
-        enum EpsBearer::Qci qUl;
+        enum NrEpsBearer::Qci qUl;
 
-        qUl = EpsBearer::GBR_CONV_VOICE;
-        EpsBearer bearerUl(qUl);
+        qUl = NrEpsBearer::GBR_CONV_VOICE;
+        NrEpsBearer bearerUl(qUl);
         nrHelper->ActivateDedicatedEpsBearer(slUeNetDev.Get(u), bearerUl, tftUl);
     }
 
@@ -1250,7 +1215,7 @@ main(int argc, char* argv[])
         << "time(s)\tnodeIp\tsrcIp\tdstIp\tsrcLink\tdstLink" << std::endl;
     for (uint32_t i = 0; i < relayUeNetDev.GetN(); ++i)
     {
-        Ptr<EpcUeNas> epcUeNas = relayUeNetDev.Get(i)->GetObject<NrUeNetDevice>()->GetNas();
+        Ptr<NrEpcUeNas> epcUeNas = relayUeNetDev.Get(i)->GetObject<NrUeNetDevice>()->GetNas();
 
         epcUeNas->TraceConnectWithoutContext(
             "NrSlRelayRxPacketTrace",

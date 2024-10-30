@@ -1,50 +1,19 @@
-/* -*-  Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil; -*- */
-/*
- * NIST-developed software is provided by NIST as a public
- * service. You may use, copy and distribute copies of the software in
- * any medium, provided that you keep intact this entire notice. You
- * may improve, modify and create derivative works of the software or
- * any portion of the software, and you may copy and distribute such
- * modifications or works. Modified works should carry a notice
- * stating that you changed the software and should note the date and
- * nature of any such change. Please explicitly acknowledge the
- * National Institute of Standards and Technology as the source of the
- * software.
- *
- * NIST-developed software is expressly provided "AS IS." NIST MAKES
- * NO WARRANTY OF ANY KIND, EXPRESS, IMPLIED, IN FACT OR ARISING BY
- * OPERATION OF LAW, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
- * WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
- * NON-INFRINGEMENT AND DATA ACCURACY. NIST NEITHER REPRESENTS NOR
- * WARRANTS THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED
- * OR ERROR-FREE, OR THAT ANY DEFECTS WILL BE CORRECTED. NIST DOES NOT
- * WARRANT OR MAKE ANY REPRESENTATIONS REGARDING THE USE OF THE
- * SOFTWARE OR THE RESULTS THEREOF, INCLUDING BUT NOT LIMITED TO THE
- * CORRECTNESS, ACCURACY, RELIABILITY, OR USEFULNESS OF THE SOFTWARE.
- *
- * You are solely responsible for determining the appropriateness of
- * using and distributing the software and you assume all risks
- * associated with its use, including but not limited to the risks and
- * costs of program errors, compliance with applicable laws, damage to
- * or loss of data, programs or equipment, and the unavailability or
- * interruption of operation. This software is not intended to be used
- * in any situation where a failure could cause risk of injury or
- * damage to property. The software developed by NIST employees is not
- * subject to copyright protection within the United States.
- */
+//
+// SPDX-License-Identifier: NIST-Software
+//
 
 #include "nr-sl-prose-helper.h"
 
 #include <ns3/config.h>
-#include <ns3/epc-ue-nas.h>
 #include <ns3/fatal-error.h>
 #include <ns3/log.h>
-#include <ns3/lte-ue-rrc.h>
+#include <ns3/nr-epc-ue-nas.h>
 #include <ns3/nr-point-to-point-epc-helper.h>
 #include <ns3/nr-sl-ue-prose.h>
 #include <ns3/nr-sl-ue-rrc.h>
 #include <ns3/nr-sl-ue-service.h>
 #include <ns3/nr-ue-net-device.h>
+#include <ns3/nr-ue-rrc.h>
 #include <ns3/pointer.h>
 #include <ns3/simulator.h>
 
@@ -113,11 +82,11 @@ NrSlProseHelper::PrepareSingleUeForProse(Ptr<NrUeNetDevice> nrUeDev)
     Ptr<NrSlUeProse> nrSlUeProse = CreateObject<NrSlUeProse>();
 
     // Connect ProSe layer SAPs
-    Ptr<LteUeRrc> lteUeRrc = nrUeDev->GetRrc();
-    nrSlUeProse->SetNrSlUeSvcRrcSapProvider(lteUeRrc->GetNrSlUeSvcRrcSapProvider());
-    lteUeRrc->SetNrSlUeSvcRrcSapUser(nrSlUeProse->GetNrSlUeSvcRrcSapUser());
+    Ptr<NrUeRrc> nrUeRrc = nrUeDev->GetRrc();
+    nrSlUeProse->SetNrSlUeSvcRrcSapProvider(nrUeRrc->GetNrSlUeSvcRrcSapProvider());
+    nrUeRrc->SetNrSlUeSvcRrcSapUser(nrSlUeProse->GetNrSlUeSvcRrcSapUser());
 
-    Ptr<EpcUeNas> epcUeNas = nrUeDev->GetNas();
+    Ptr<NrEpcUeNas> epcUeNas = nrUeDev->GetNas();
     nrSlUeProse->SetNrSlUeSvcNasSapProvider(epcUeNas->GetNrSlUeSvcNasSapProvider());
     epcUeNas->SetNrSlUeSvcNasSapUser(nrSlUeProse->GetNrSlUeSvcNasSapUser());
 
@@ -160,8 +129,8 @@ NrSlProseHelper::EstablishRealDirectLink(Time time,
     Ptr<NrUeNetDevice> trgtUeNetDev = trgtUe->GetObject<NrUeNetDevice>();
     Ptr<NrSlUeProse> initUeProse = initUeNetDev->GetObject<NrSlUeProse>();
     Ptr<NrSlUeProse> trgtUeProse = trgtUeNetDev->GetObject<NrSlUeProse>();
-    Ptr<LteUeRrc> initUeRrc = initUeNetDev->GetRrc();
-    Ptr<LteUeRrc> trgtUeRrc = trgtUeNetDev->GetRrc();
+    Ptr<NrUeRrc> initUeRrc = initUeNetDev->GetRrc();
+    Ptr<NrUeRrc> trgtUeRrc = trgtUeNetDev->GetRrc();
 
     initUeProse->SetImsi(initUeRrc->GetImsi());
     trgtUeProse->SetImsi(trgtUeRrc->GetImsi());
@@ -223,8 +192,8 @@ NrSlProseHelper::EstablishL3UeToNetworkRelayConnection(Time t,
     Ptr<NrUeNetDevice> relayUeNetDev = relayUe->GetObject<NrUeNetDevice>();
     Ptr<NrSlUeProse> remoteUeProse = remoteUeNetDev->GetObject<NrSlUeProse>();
     Ptr<NrSlUeProse> relayUeProse = relayUeNetDev->GetObject<NrSlUeProse>();
-    Ptr<LteUeRrc> remoteUeRrc = remoteUeNetDev->GetRrc();
-    Ptr<LteUeRrc> relayUeRrc = relayUeNetDev->GetRrc();
+    Ptr<NrUeRrc> remoteUeRrc = remoteUeNetDev->GetRrc();
+    Ptr<NrUeRrc> relayUeRrc = relayUeNetDev->GetRrc();
 
     remoteUeProse->SetImsi(remoteUeRrc->GetImsi());
     relayUeProse->SetImsi(relayUeRrc->GetImsi());
@@ -268,8 +237,8 @@ NrSlProseHelper::EstablishL3UeToNetworkRelayConnection(Time t,
 void
 NrSlProseHelper::ConfigureL3UeToNetworkRelay(const NetDeviceContainer relayUeDevices,
                                              const std::set<uint32_t> relayServiceCodes,
-                                             EpsBearer bearer,
-                                             Ptr<EpcTft> tft)
+                                             NrEpsBearer bearer,
+                                             Ptr<NrEpcTft> tft)
 {
     NS_LOG_FUNCTION(this);
     NS_ASSERT_MSG(m_epcHelper, "dedicated EPS bearers cannot be set up when the EPC is not used");
@@ -361,7 +330,7 @@ NrSlProseHelper::StartRelayDiscovery(Ptr<NetDevice> ueDevice,
 {
     NS_LOG_FUNCTION(this);
     Ptr<NrSlUeProse> ueProse = ueDevice->GetObject<NrUeNetDevice>()->GetObject<NrSlUeProse>();
-    Ptr<LteUeRrc> ueRrc = ueDevice->GetObject<NrUeNetDevice>()->GetRrc();
+    Ptr<NrUeRrc> ueRrc = ueDevice->GetObject<NrUeNetDevice>()->GetRrc();
     uint32_t srcL2Id = ueRrc->GetSourceL2Id();
     ueProse->SetL2Id(srcL2Id);
     ueProse->SetImsi(ueRrc->GetImsi());
@@ -398,8 +367,8 @@ NrSlProseHelper::StartRemoteRelayConnection(
     const std::vector<uint32_t> dstL2Ids,
     NrSlUeProse::DiscoveryModel discoveryModel,
     Ptr<NrSlUeProseRelaySelectionAlgorithm> selectionAlgorithm,
-    Ptr<EpcTft> tft,
-    EpsBearer bearer)
+    Ptr<NrEpcTft> tft,
+    NrEpsBearer bearer)
 {
     NS_LOG_FUNCTION(this);
 
@@ -444,7 +413,7 @@ NrSlProseHelper::StartRemoteRelayConnection(
         Ptr<NrSlUeProse> remoteProse =
             remoteDevices.Get(i)->GetObject<NrUeNetDevice>()->GetObject<NrSlUeProse>();
         remoteProse->SetRelaySelectionAlgorithm(selectionAlgorithm);
-        Ptr<LteUeRrc> remoteRrc = remoteDevices.Get(i)->GetObject<NrUeNetDevice>()->GetRrc();
+        Ptr<NrUeRrc> remoteRrc = remoteDevices.Get(i)->GetObject<NrUeNetDevice>()->GetRrc();
         remoteRrc->EnableUeSlRsrpMeasurements();
     }
 }
@@ -452,6 +421,7 @@ NrSlProseHelper::StartRemoteRelayConnection(
 void
 NrSlProseHelper::EnableRelayTraces(void)
 {
+    std::cout << "EnableRelayTraces" << std::endl;
     NS_LOG_FUNCTION(this);
     // Relay discovery traces
     Config::Connect(
@@ -471,7 +441,7 @@ NrSlProseHelper::EnableRelayTraces(void)
 void
 NrSlProseHelper::InstallNrSlDiscoveryConfiguration(NetDeviceContainer relays,
                                                    NetDeviceContainer remotes,
-                                                   const LteRrcSap::SlDiscConfigCommon discConfig)
+                                                   const NrRrcSap::SlDiscConfigCommon discConfig)
 {
     NS_LOG_FUNCTION(this);
 
@@ -479,8 +449,8 @@ NrSlProseHelper::InstallNrSlDiscoveryConfiguration(NetDeviceContainer relays,
     {
         Ptr<NetDevice> netRelayDev = *i;
         Ptr<NrUeNetDevice> nrRelayDev = netRelayDev->GetObject<NrUeNetDevice>();
-        Ptr<LteUeRrc> lteRelayRrc = nrRelayDev->GetRrc();
-        Ptr<NrSlUeRrc> nrSlRelayRrc = lteRelayRrc->GetObject<NrSlUeRrc>();
+        Ptr<NrUeRrc> nrRelayRrc = nrRelayDev->GetRrc();
+        Ptr<NrSlUeRrc> nrSlRelayRrc = nrRelayRrc->GetObject<NrSlUeRrc>();
         nrSlRelayRrc->SetNrSlDiscoveryRelayConfiguration(discConfig.slRelayUeConfigCommon);
     }
 
@@ -488,8 +458,8 @@ NrSlProseHelper::InstallNrSlDiscoveryConfiguration(NetDeviceContainer relays,
     {
         Ptr<NetDevice> netRemoteDev = *j;
         Ptr<NrUeNetDevice> nrRemoteDev = netRemoteDev->GetObject<NrUeNetDevice>();
-        Ptr<LteUeRrc> lteRemoteRrc = nrRemoteDev->GetRrc();
-        Ptr<NrSlUeRrc> nrSlRemoteRrc = lteRemoteRrc->GetObject<NrSlUeRrc>();
+        Ptr<NrUeRrc> nrRemoteRrc = nrRemoteDev->GetRrc();
+        Ptr<NrSlUeRrc> nrSlRemoteRrc = nrRemoteRrc->GetObject<NrSlUeRrc>();
         nrSlRemoteRrc->SetNrSlDiscoveryRemoteConfiguration(discConfig.slRemoteUeConfigCommon);
     }
 }

@@ -1,37 +1,6 @@
-/* -*-  Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil; -*- */
-/*
- * NIST-developed software is provided by NIST as a public
- * service. You may use, copy and distribute copies of the software in
- * any medium, provided that you keep intact this entire notice. You
- * may improve, modify and create derivative works of the software or
- * any portion of the software, and you may copy and distribute such
- * modifications or works. Modified works should carry a notice
- * stating that you changed the software and should note the date and
- * nature of any such change. Please explicitly acknowledge the
- * National Institute of Standards and Technology as the source of the
- * software.
- *
- * NIST-developed software is expressly provided "AS IS." NIST MAKES
- * NO WARRANTY OF ANY KIND, EXPRESS, IMPLIED, IN FACT OR ARISING BY
- * OPERATION OF LAW, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
- * WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
- * NON-INFRINGEMENT AND DATA ACCURACY. NIST NEITHER REPRESENTS NOR
- * WARRANTS THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED
- * OR ERROR-FREE, OR THAT ANY DEFECTS WILL BE CORRECTED. NIST DOES NOT
- * WARRANT OR MAKE ANY REPRESENTATIONS REGARDING THE USE OF THE
- * SOFTWARE OR THE RESULTS THEREOF, INCLUDING BUT NOT LIMITED TO THE
- * CORRECTNESS, ACCURACY, RELIABILITY, OR USEFULNESS OF THE SOFTWARE.
- *
- * You are solely responsible for determining the appropriateness of
- * using and distributing the software and you assume all risks
- * associated with its use, including but not limited to the risks and
- * costs of program errors, compliance with applicable laws, damage to
- * or loss of data, programs or equipment, and the unavailability or
- * interruption of operation. This software is not intended to be used
- * in any situation where a failure could cause risk of injury or
- * damage to property. The software developed by NIST employees is not
- * subject to copyright protection within the United States.
- */
+//
+// SPDX-License-Identifier: NIST-Software
+//
 
 #include "nr-sl-ue-prose.h"
 
@@ -42,11 +11,11 @@
 #include <ns3/fatal-error.h>
 #include <ns3/ipv4-l3-protocol.h>
 #include <ns3/log.h>
-#include <ns3/lte-radio-bearer-info.h>
-#include <ns3/lte-rrc-sap.h>
-#include <ns3/lte-ue-rrc.h>
 #include <ns3/node.h>
 #include <ns3/nr-point-to-point-epc-helper.h>
+#include <ns3/nr-radio-bearer-info.h>
+#include <ns3/nr-rrc-sap.h>
+#include <ns3/nr-ue-rrc.h>
 #include <ns3/object-factory.h>
 #include <ns3/object-map.h>
 #include <ns3/pointer.h>
@@ -1190,10 +1159,10 @@ NrSlUeProse::ActivateDirectLinkDataRadioBearer(uint32_t peerL2Id,
     else
     {
         // Create unicast TFT to be able to transmit to peer UE
-        Ptr<LteSlTft> tft;
-        tft = Create<LteSlTft>(LteSlTft::Direction::TRANSMIT,
-                               ipInfo.peerIpv4Addr,
-                               itDirLinkCtxt->second->m_slInfo);
+        Ptr<NrSlTft> tft;
+        tft = Create<NrSlTft>(NrSlTft::Direction::TRANSMIT,
+                              ipInfo.peerIpv4Addr,
+                              itDirLinkCtxt->second->m_slInfo);
         m_nrSlUeSvcNasSapProvider->ActivateSvcNrSlDataRadioBearer(tft);
         itDirLinkCtxt->second->m_hasPendingSlDrb = true;
     }
@@ -1275,13 +1244,13 @@ NrSlUeProse::DeleteDirectLinkDataRadioBearer(uint32_t dstL2Id,
         NS_LOG_LOGIC("SL-SRB found for this destination " << dstL2Id);
 
         // Create unicast TFT
-        Ptr<LteSlTft> tft;
+        Ptr<NrSlTft> tft;
         SidelinkInfo slInfo;
         slInfo.m_castType = SidelinkInfo::CastType::Unicast;
         slInfo.m_dstL2Id = dstL2Id;
         slInfo.m_dynamic = true;
         slInfo.m_pdb = m_signallingPdb;
-        tft = Create<LteSlTft>(LteSlTft::Direction::TRANSMIT, ipInfo.peerIpv4Addr, slInfo);
+        tft = Create<NrSlTft>(NrSlTft::Direction::TRANSMIT, ipInfo.peerIpv4Addr, slInfo);
 
         // Instruct the NAS to delete SL-DRB
         m_nrSlUeSvcNasSapProvider->DeleteSvcNrSlDataRadioBearer(tft);

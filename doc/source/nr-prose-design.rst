@@ -513,10 +513,10 @@ bearers to have the data packets flowing in the appropriate path depending on
 the role of the UE (relay UE or remote UE).
 
 
-LTE/EPC UE NAS
-==============
+NR EPC UE NAS
+=============
 
-EpcUeNas class was updated with the SAP provider functions for its interface
+NrEpcUeNas class was updated with the SAP provider functions for its interface
 with the sidelink service layer (e.g., the NrSlUeProse class), including the
 activation of SL-DRBs and (re)configuration of the data bearers (UL and SL
 where it applies) upon a U2N relay  connection. The implementation also
@@ -524,12 +524,12 @@ includes a function that moves the received packet through the correct path
 when the UE is acting as an L3 U2N relay UE, and a trace source that exposes
 the packet information and the corresponding path.
 
-LTE UE RRC
-==========
+NR UE RRC
+=========
 
-The LteUeRrc was extended with the SAP provider functions for its interface
+The NrUeRrc was extended with the SAP provider functions for its interface
 with the sidelink service layer (e.g., the NrSlUeProse class). The services
-LteUeRrc provides to the service layer include the addition and activation
+NrUeRrc provides to the service layer include the addition and activation
 of sidelink signaling radio bearers (SL-SRB0 to SL-SRB3 used for Unicast mode
 5G ProSe direct communication signaling messages, and SL-SRB4 used for
 discovery messages) and the transmission of the corresponding messages to lower
@@ -537,7 +537,7 @@ layers. It also includes the implementation of two methods that instruct lower
 layers to monitor messages directed to a specified L2 ID and the UE's own L2 ID.
 The SL-SRBs information is stored on instances of the
 NrSlSignallingRadioBearerInfo or NrSlDiscoveryRadioBearerInfo, including the
-logical channel configuration and the PDCP and RLC stacks (LtePdcp and LteRlc
+logical channel configuration and the PDCP and RLC stacks (NrPdcp and NrRlc
 respectively), and the connection with lower layers is done similarly to
 SL-DRBs by using the corresponding SAPs with the NrSlBwpManagerUe and NrUeMac
 classes.
@@ -549,12 +549,12 @@ NR SL UE RRC
 ============
 
 The class NrSlUeRrcSapUser (i.e., interface exported by the NrSlUeRrc and
-called by the LteUeRrc) was extended with the definition of the methods to add
+called by the NrUeRrc) was extended with the definition of the methods to add
 and retrieve transmission and reception SL-SRBs for both direct communication
 and direct discovery.
 These methods were further implemented in the NrSlUeRrc class which stores the
 instances of the  NrSlSignallingRadioBearerInfo or NrSlDiscoveryRadioBearerInfo
-created in the LteUeRrc for each SL-SRB.
+created in the NrUeRrc for each SL-SRB.
 
 
 NR UE BWP MANAGER
@@ -565,7 +565,7 @@ channels information and of multiplexing them to/from the appropriate MAC
 entities. This class was extended with functions to add SL-SRB's logical
 channels to transport signaling messages needed for unicast direct
 communication procedures and discovery messages. NrSlUeBwpmRrcSapProvider
-class was extended with the interface definition that allows LteUeRrc to use
+class was extended with the interface definition that allows NrUeRrc to use
 those methods.
 
 

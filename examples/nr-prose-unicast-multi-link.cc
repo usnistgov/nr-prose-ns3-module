@@ -1,37 +1,6 @@
-/* -*-  Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil; -*- */
-/*
- * NIST-developed software is provided by NIST as a public
- * service. You may use, copy and distribute copies of the software in
- * any medium, provided that you keep intact this entire notice. You
- * may improve, modify and create derivative works of the software or
- * any portion of the software, and you may copy and distribute such
- * modifications or works. Modified works should carry a notice
- * stating that you changed the software and should note the date and
- * nature of any such change. Please explicitly acknowledge the
- * National Institute of Standards and Technology as the source of the
- * software.
- *
- * NIST-developed software is expressly provided "AS IS." NIST MAKES
- * NO WARRANTY OF ANY KIND, EXPRESS, IMPLIED, IN FACT OR ARISING BY
- * OPERATION OF LAW, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
- * WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
- * NON-INFRINGEMENT AND DATA ACCURACY. NIST NEITHER REPRESENTS NOR
- * WARRANTS THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED
- * OR ERROR-FREE, OR THAT ANY DEFECTS WILL BE CORRECTED. NIST DOES NOT
- * WARRANT OR MAKE ANY REPRESENTATIONS REGARDING THE USE OF THE
- * SOFTWARE OR THE RESULTS THEREOF, INCLUDING BUT NOT LIMITED TO THE
- * CORRECTNESS, ACCURACY, RELIABILITY, OR USEFULNESS OF THE SOFTWARE.
- *
- * You are solely responsible for determining the appropriateness of
- * using and distributing the software and you assume all risks
- * associated with its use, including but not limited to the risks and
- * costs of program errors, compliance with applicable laws, damage to
- * or loss of data, programs or equipment, and the unavailability or
- * interruption of operation. This software is not intended to be used
- * in any situation where a failure could cause risk of injury or
- * damage to property. The software developed by NIST employees is not
- * subject to copyright protection within the United States.
- */
+//
+// SPDX-License-Identifier: NIST-Software
+//
 
 /**
  * \ingroup examples
@@ -110,7 +79,6 @@ $ ./ns3 run "nr-prose-unicast-multi-link --help"
 #include "ns3/core-module.h"
 #include "ns3/flow-monitor-module.h"
 #include "ns3/internet-module.h"
-#include "ns3/lte-module.h"
 #include "ns3/mobility-module.h"
 #include "ns3/network-module.h"
 #include "ns3/nr-module.h"
@@ -329,7 +297,7 @@ main(int argc, char* argv[])
     NS_ABORT_IF(centralFrequencyBandSl > 6e9);
 
     // Setup large enough buffer size to avoid overflow
-    Config::SetDefault("ns3::LteRlcUm::MaxTxBufferSize", UintegerValue(999999999));
+    Config::SetDefault("ns3::NrRlcUm::MaxTxBufferSize", UintegerValue(999999999));
 
     // UE nodes creation
     NodeContainer ueVoiceContainer;
@@ -348,17 +316,10 @@ main(int argc, char* argv[])
     mobility.Install(ueVoiceContainer);
 
     /*
-     * Setup the NR module. We create the various helpers needed for the
-     * NR simulation:
-     * - EpcHelper, which will setup the core network entities
-     * - NrHelper, which takes care of creating and connecting the various
-     * part of the NR stack
+     * Setup the NR module. We create the NrHelper, which takes care of
+     * creating and connecting the various  part of the NR stack
      */
-    Ptr<NrPointToPointEpcHelper> epcHelper = CreateObject<NrPointToPointEpcHelper>();
-    Ptr<NrHelper> nrHelper = CreateObject<NrHelper>();
-
-    // Put the pointers inside nrHelper
-    nrHelper->SetEpcHelper(epcHelper);
+    auto nrHelper = CreateObject<NrSlHelper>();
 
     /*
      * Spectrum division. We create one operational band, containing
@@ -396,9 +357,6 @@ main(int argc, char* argv[])
     Packet::EnableChecking();
     Packet::EnablePrinting();
 
-    // Core latency
-    epcHelper->SetAttribute("S1uLinkDelay", TimeValue(MilliSeconds(0)));
-
     /*
      * Antennas for all the UEs
      * We are not using beamforming in SL, rather we are using
@@ -413,7 +371,6 @@ main(int argc, char* argv[])
     nrHelper->SetUePhyAttribute("TxPower", DoubleValue(txPower));
 
     // NR Sidelink attribute of UE MAC, which are would be common for all the UEs
-    nrHelper->SetUeMacTypeId(NrSlUeMac::GetTypeId());
     nrHelper->SetUeMacAttribute("EnableSensing", BooleanValue(sensing));
     nrHelper->SetUeMacAttribute("T1", UintegerValue(2));
     nrHelper->SetUeMacAttribute("ActivePoolId", UintegerValue(0));
@@ -422,7 +379,6 @@ main(int argc, char* argv[])
 
     uint8_t bwpIdForGbrMcptt = 0;
 
-    nrHelper->SetBwpManagerTypeId(TypeId::LookupByName("ns3::NrSlBwpManagerUe"));
     // following parameter has no impact at the moment because:
     // 1. No support for PQI based mapping between the application and the LCs
     // 2. No scheduler to consider PQI
@@ -436,19 +392,6 @@ main(int argc, char* argv[])
 
     NetDeviceContainer ueVoiceNetDev = nrHelper->InstallUeDevice(ueVoiceContainer, allBwps);
 
-    // When all the configuration is done, explicitly call UpdateConfig ()
-    for (auto it = ueVoiceNetDev.Begin(); it != ueVoiceNetDev.End(); ++it)
-    {
-        DynamicCast<NrUeNetDevice>(*it)->UpdateConfig();
-    }
-
-    /*Create NrSlHelper which will configure the UEs protocol stack to be ready to
-     *perform Sidelink related procedures
-     */
-    Ptr<NrSlHelper> nrSlHelper = CreateObject<NrSlHelper>();
-    // Put the pointers inside NrSlHelper
-    nrSlHelper->SetEpcHelper(epcHelper);
-
     /*
      * Set the SL error model and AMC
      * Error model type: ns3::NrEesmCcT1, ns3::NrEesmCcT2, ns3::NrEesmIrT1,
@@ -456,8 +399,8 @@ main(int argc, char* argv[])
      * AMC type: NrAmc::ShannonModel or NrAmc::ErrorModel
      */
     std::string errorModel = "ns3::NrEesmIrT1";
-    nrSlHelper->SetSlErrorModel(errorModel);
-    nrSlHelper->SetUeSlAmcAttribute("AmcModel", EnumValue(NrAmc::ErrorModel));
+    nrHelper->SetSlErrorModel(errorModel);
+    nrHelper->SetUeSlAmcAttribute("AmcModel", EnumValue(NrAmc::ErrorModel));
 
     /*
      * Set the SL scheduler attributes
@@ -465,8 +408,8 @@ main(int argc, char* argv[])
      * fixed MCS value and schedules logical channels by priority order first
      * and then by creation order
      */
-    nrSlHelper->SetNrSlSchedulerTypeId(NrSlUeMacSchedulerFixedMcs::GetTypeId());
-    nrSlHelper->SetUeSlSchedulerAttribute("Mcs", UintegerValue(14));
+    nrHelper->SetNrSlSchedulerTypeId(NrSlUeMacSchedulerFixedMcs::GetTypeId());
+    nrHelper->SetUeSlSchedulerAttribute("Mcs", UintegerValue(14));
 
     /*
      * Very important method to configure UE protocol stack, i.e., it would
@@ -474,16 +417,16 @@ main(int argc, char* argv[])
      * error model, configure AMC, and configure ChunkProcessor in Interference
      * API.
      */
-    nrSlHelper->PrepareUeForSidelink(ueVoiceNetDev, bwpIdContainer);
+    nrHelper->PrepareUeForSidelink(ueVoiceNetDev, bwpIdContainer);
 
     /*
      * Start preparing for all the sub Structs/RRC Information Element (IEs)
-     * of LteRrcSap::SidelinkPreconfigNr. This is the main structure, which would
+     * of NrRrcSap::SidelinkPreconfigNr. This is the main structure, which would
      * hold all the pre-configuration related to Sidelink.
      */
 
     // SlResourcePoolNr IE
-    LteRrcSap::SlResourcePoolNr slResourcePoolNr;
+    NrRrcSap::SlResourcePoolNr slResourcePoolNr;
     // get it from pool factory
     Ptr<NrSlCommResourcePoolFactory> ptrFactory = Create<NrSlCommResourcePoolFactory>();
     // Configure specific parameters of interest:
@@ -497,39 +440,39 @@ main(int argc, char* argv[])
     std::list<uint16_t> resourceReservePeriodList = {0, 100}; // in ms
     ptrFactory->SetSlResourceReservePeriodList(resourceReservePeriodList);
     // Once parameters are configured, we can create the pool
-    LteRrcSap::SlResourcePoolNr pool = ptrFactory->CreatePool();
+    NrRrcSap::SlResourcePoolNr pool = ptrFactory->CreatePool();
     slResourcePoolNr = pool;
 
     // Configure the SlResourcePoolConfigNr IE, which holds a pool and its id
-    LteRrcSap::SlResourcePoolConfigNr slresoPoolConfigNr;
+    NrRrcSap::SlResourcePoolConfigNr slresoPoolConfigNr;
     slresoPoolConfigNr.haveSlResourcePoolConfigNr = true;
     // Pool id, ranges from 0 to 15
     uint16_t poolId = 0;
-    LteRrcSap::SlResourcePoolIdNr slResourcePoolIdNr;
+    NrRrcSap::SlResourcePoolIdNr slResourcePoolIdNr;
     slResourcePoolIdNr.id = poolId;
     slresoPoolConfigNr.slResourcePoolId = slResourcePoolIdNr;
     slresoPoolConfigNr.slResourcePool = slResourcePoolNr;
 
     // Configure the SlBwpPoolConfigCommonNr IE, which holds an array of pools
-    LteRrcSap::SlBwpPoolConfigCommonNr slBwpPoolConfigCommonNr;
+    NrRrcSap::SlBwpPoolConfigCommonNr slBwpPoolConfigCommonNr;
     // Array for pools, we insert the pool in the array as per its poolId
     slBwpPoolConfigCommonNr.slTxPoolSelectedNormal[slResourcePoolIdNr.id] = slresoPoolConfigNr;
 
     // Configure the BWP IE
-    LteRrcSap::Bwp bwp;
+    NrRrcSap::Bwp bwp;
     bwp.numerology = numerologyBwpSl;
     bwp.symbolsPerSlots = 14;
     bwp.rbPerRbg = 1;
     bwp.bandwidth = bandwidthBandSl;
 
     // Configure the SlBwpGeneric IE
-    LteRrcSap::SlBwpGeneric slBwpGeneric;
+    NrRrcSap::SlBwpGeneric slBwpGeneric;
     slBwpGeneric.bwp = bwp;
-    slBwpGeneric.slLengthSymbols = LteRrcSap::GetSlLengthSymbolsEnum(14);
-    slBwpGeneric.slStartSymbol = LteRrcSap::GetSlStartSymbolEnum(0);
+    slBwpGeneric.slLengthSymbols = NrRrcSap::GetSlLengthSymbolsEnum(14);
+    slBwpGeneric.slStartSymbol = NrRrcSap::GetSlStartSymbolEnum(0);
 
     // Configure the SlBwpConfigCommonNr IE
-    LteRrcSap::SlBwpConfigCommonNr slBwpConfigCommonNr;
+    NrRrcSap::SlBwpConfigCommonNr slBwpConfigCommonNr;
     slBwpConfigCommonNr.haveSlBwpGeneric = true;
     slBwpConfigCommonNr.slBwpGeneric = slBwpGeneric;
     slBwpConfigCommonNr.haveSlBwpPoolConfigCommonNr = true;
@@ -537,7 +480,7 @@ main(int argc, char* argv[])
 
     // Configure the SlFreqConfigCommonNr IE, which holds the array to store
     // the configuration of all Sidelink BWP (s).
-    LteRrcSap::SlFreqConfigCommonNr slFreConfigCommonNr;
+    NrRrcSap::SlFreqConfigCommonNr slFreConfigCommonNr;
     // Array for BWPs. Here we will iterate over the BWPs, which
     // we want to use for SL.
     for (const auto& it : bwpIdContainer)
@@ -547,21 +490,21 @@ main(int argc, char* argv[])
     }
 
     // Configure the TddUlDlConfigCommon IE
-    LteRrcSap::TddUlDlConfigCommon tddUlDlConfigCommon;
+    NrRrcSap::TddUlDlConfigCommon tddUlDlConfigCommon;
     tddUlDlConfigCommon.tddPattern = "DL|DL|DL|F|UL|UL|UL|UL|UL|UL|";
 
     // Configure the SlPreconfigGeneralNr IE
-    LteRrcSap::SlPreconfigGeneralNr slPreconfigGeneralNr;
+    NrRrcSap::SlPreconfigGeneralNr slPreconfigGeneralNr;
     slPreconfigGeneralNr.slTddConfig = tddUlDlConfigCommon;
 
     // Configure the SlUeSelectedConfig IE
-    LteRrcSap::SlUeSelectedConfig slUeSelectedPreConfig;
+    NrRrcSap::SlUeSelectedConfig slUeSelectedPreConfig;
     slUeSelectedPreConfig.slProbResourceKeep = 0;
     // Configure the SlPsschTxParameters IE
-    LteRrcSap::SlPsschTxParameters psschParams;
+    NrRrcSap::SlPsschTxParameters psschParams;
     psschParams.slMaxTxTransNumPssch = 5;
     // Configure the SlPsschTxConfigList IE
-    LteRrcSap::SlPsschTxConfigList pscchTxConfigList;
+    NrRrcSap::SlPsschTxConfigList pscchTxConfigList;
     pscchTxConfigList.slPsschTxParameters[0] = psschParams;
     slUeSelectedPreConfig.slPsschTxConfigList = pscchTxConfigList;
 
@@ -569,46 +512,42 @@ main(int argc, char* argv[])
      * Finally, configure the SidelinkPreconfigNr This is the main structure
      * that needs to be communicated to NrSlUeRrc class
      */
-    LteRrcSap::SidelinkPreconfigNr slPreConfigNr;
+    NrRrcSap::SidelinkPreconfigNr slPreConfigNr;
     slPreConfigNr.slPreconfigGeneral = slPreconfigGeneralNr;
     slPreConfigNr.slUeSelectedPreConfig = slUeSelectedPreConfig;
     slPreConfigNr.slPreconfigFreqInfoList[0] = slFreConfigCommonNr;
 
     // Communicate the above pre-configuration to the NrSlHelper
-    nrSlHelper->InstallNrSlPreConfiguration(ueVoiceNetDev, slPreConfigNr);
+    nrHelper->InstallNrSlPreConfiguration(ueVoiceNetDev, slPreConfigNr);
 
     /****************************** End SL Configuration ***********************/
 
     /*
      * Fix the random streams
      */
-    int64_t stream = 1;
-    const uint64_t streamIncrement = 1000;
-    nrHelper->AssignStreams(ueVoiceNetDev, stream);
-    stream += streamIncrement;
-    nrSlHelper->AssignStreams(ueVoiceNetDev, stream);
+    int64_t streamBase{1000};
+    int64_t streamsUsed{0};
+    streamsUsed = nrHelper->AssignStreams(ueVoiceNetDev, streamBase);
+    NS_LOG_DEBUG("Used " << streamsUsed << " random variable streams in NrHelper");
 
     /*
      * Configure the IPv4 stack
      */
     InternetStackHelper internet;
     internet.Install(ueVoiceContainer);
+    streamBase = 2000;
+    streamsUsed = internet.AssignStreams(ueVoiceContainer, streamBase);
+    NS_LOG_DEBUG("Used " << streamsUsed << " random variable streams in InternetStackHelper");
     uint16_t port = 8000;
-    Ipv4InterfaceContainer ueIpIface;
-    ueIpIface = epcHelper->AssignUeIpv4Address(ueVoiceNetDev);
+    Ipv4AddressHelper addrHelper;
+    addrHelper.SetBase("7.0.0.0", "255.0.0.0");
+    auto ueIpIface = addrHelper.Assign(ueVoiceNetDev);
 
     std::vector<Ipv4Address> ipv4AddressVector(ueNum);
-
-    // set the default gateway for the UE
     Ipv4StaticRoutingHelper ipv4RoutingHelper;
     for (uint32_t u = 0; u < ueVoiceContainer.GetN(); ++u)
     {
         Ptr<Node> ueNode = ueVoiceContainer.Get(u);
-        // Set the default gateway for the UE
-        Ptr<Ipv4StaticRouting> ueStaticRouting =
-            ipv4RoutingHelper.GetStaticRouting(ueNode->GetObject<Ipv4>());
-        ueStaticRouting->SetDefaultRoute(epcHelper->GetUeDefaultGatewayAddress(), 1);
-
         // Obtain local IPv4 addresses that will be used to route the unicast traffic upon setup of
         // the direct link
         ipv4AddressVector[u] =
@@ -683,8 +622,7 @@ main(int argc, char* argv[])
     // Random variable to randomize a bit start times of the client applications
     // to avoid simulation artifacts of all the TX UEs transmitting at the same time.
     Ptr<UniformRandomVariable> startTimeRnd = CreateObject<UniformRandomVariable>();
-    stream += streamIncrement;
-    startTimeRnd->SetStream(stream);
+    startTimeRnd->SetStream(3000);
     startTimeRnd->SetAttribute("Min", DoubleValue(0));
     startTimeRnd->SetAttribute("Max", DoubleValue(0.10));
 
@@ -743,8 +681,9 @@ main(int argc, char* argv[])
     serverApps = sidelinkSink.Install(ueVoiceContainer); // Installed in all UEs
     serverApps.Start(Seconds(2.0));
 
-    stream += streamIncrement;
-    ApplicationHelper::AssignStreamsToAllApps(ueVoiceContainer, stream);
+    streamBase = 4000;
+    streamsUsed = ApplicationHelper::AssignStreamsToAllApps(ueVoiceContainer, streamBase);
+    NS_LOG_DEBUG("Used " << streamsUsed << " random variable streams in ApplicationHelper");
 
     /******************** End application configuration ************************/
 
