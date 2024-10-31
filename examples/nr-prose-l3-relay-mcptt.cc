@@ -821,7 +821,6 @@ main(int argc, char* argv[])
 
     /*************************Spectrum division ****************************/
     BandwidthPartInfoPtrVector allBwps;
-    CcBwpCreator ccBwpCreator;
 
     OperationBandInfo band;
 
@@ -1939,8 +1938,6 @@ main(int argc, char* argv[])
     ApplicationHelper::AssignStreamsToAllApps(relayUeNodes, randomStream);
     randomStream += streamIncrement;
     ApplicationHelper::AssignStreamsToAllApps(remoteUeNodes, randomStream);
-    randomStream += streamIncrement;
-    ApplicationHelper::AssignStreamsToAllApps(remoteHostContainer, randomStream);
 
     /******************** End Application configuration ************************/
 
